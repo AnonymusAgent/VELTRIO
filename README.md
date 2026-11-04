@@ -7,7 +7,10 @@ A cinematic, Netflix-inspired video platform with a private admin studio for upl
 - **Public site** — homepage hero, trending, categories, search, video watch page, comments, likes, save-to-list, branded loading screen.
 - **Private admin studio** at `/admin` — dashboard, direct uploads with progress, thumbnail handling, library management, publishing controls, and account settings.
 - **Direct uploads** — videos use the configured local-volume or Vercel Blob provider and play back through the authenticated media proxy with HTTP range requests (seeking works). No Telegram, TeraBox, or third-party imports.
-- **Email + password authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset. No social/OAuth providers.
+- **User accounts** — Neon Auth / Better Auth email sign-up and sign-in at `/account`. The admin login remains separate.
+- **Creator studio** — `/studio` lists each signed-in creator’s own videos and views, with local-storage uploads, publishing and deletion. Earnings are marked unavailable until a real monetization and payout system is implemented.
+- **First-party analytics** — opt-in public page views and playback events in the admin overview. The last 30 days of page views exclude query strings and IP addresses; counts are estimates and exclude people who decline analytics. Playback totals are all-time and may include events recorded by older versions before consent was introduced; older watch-time measurements are not directly comparable to the new incremental measurements.
+- **Admin authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset.
 - **Monetization ready** — Google AdSense slots (header, sidebar, in-feed, video, footer) with a setup guide at `/adsense-setup` and an auto-generated `/ads.txt`.
 
 ## Requirements
@@ -34,7 +37,8 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Direct PostgreSQL connection string. Used by Drizzle schema commands. |
 | `DATABASE_URL_POOLED` | recommended | Pooled runtime connection string. Used by the app when present; recommended for Neon on Vercel. |
-| `NEON_AUTH_BASE_URL` | no | Neon Auth base URL. Stored for configuration; the current admin studio still uses its built-in email/password login. |
+| `NEON_AUTH_BASE_URL` | for accounts | Neon Auth base URL from the Neon console. Enable email/password sign-in and configure verification and trusted origins there. |
+| `NEON_AUTH_COOKIE_SECRET` | for accounts | Random secret of at least 32 characters used to sign Neon Auth cookies. Keep it private and stable across deployments. |
 | `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the fixed admin account (`alimukhtar@veltrio.com`). |
 | `ADMIN_RECOVERY_CODE` | recommended | One-time recovery code for password reset. Cleared after use. |
 | `STORAGE_PROVIDER` | no | `local` (default) or `vercel_blob`. Blob mode requires `BLOB_READ_WRITE_TOKEN`. |
@@ -45,7 +49,7 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | `NEXT_PUBLIC_SITE_URL` | production | Canonical site URL, used for metadata and the sitemap. |
 | `NEXT_PUBLIC_ADSENSE_*` | no | AdSense publisher ID and slot IDs. Leave blank to show labeled placeholders. |
 
-See `.env.example` for the full list.
+See `.env.example` for the full list. Apply migrations before enabling creator uploads or analytics. Creator uploads currently support only `STORAGE_PROVIDER=local` and require persistent storage; Vercel Blob creator uploads are not yet supported. User signup, upload, and playback must be tested against your configured Neon Auth instance and PostgreSQL database before deployment. The new creator studio does not yet provide custom thumbnails, editing metadata, payouts, account-synced lists/subscriptions, or the full feature set of YouTube. Before opening uploads to the public, add per-user quotas, abuse controls, content moderation, operational monitoring, and cleanup for unattached finalized creator assets.
 
 ## Database
 

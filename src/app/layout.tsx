@@ -12,6 +12,7 @@ import "@fontsource/outfit/800.css";
 import "./globals.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
+import AnalyticsConsent from "@/components/AnalyticsConsent";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
 export const viewport: Viewport = {
@@ -27,5 +28,5 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body><BrandIntro /><AppChrome>{children}</AppChrome></body></html>;
+  return <html lang="en"><body><BrandIntro /><AppChrome>{children}</AppChrome><AnalyticsConsent /></body></html>;
 }

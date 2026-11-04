@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
     assertSameOrigin(request);
+    const store = await cookies();
+    if (store.get("vh_analytics_consent")?.value !== "yes") return NextResponse.json({ ok: true });
     const body = await jsonBody(request);
     const kind = body.kind === "play" || body.kind === "progress" || body.kind === "complete" ? body.kind : null;
     const watchSeconds = Number(body.watchSeconds || 0);
@@ -19,9 +21,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     const slug = (await params).slug;
     const [video] = await db.select({ id: videos.id }).from(videos).where(and(eq(videos.slug, slug), eq(videos.status, "published"), eq(videos.sourceType, "upload"))).limit(1);
     if (!video) throw new HttpError(404, "Video not found.");
-    const store = await cookies();
     let token = store.get("vh_analytics_session")?.value;
-    const created = !token;
+    const created = !token || !/^[a-f0-9]{64}$/.test(token);
     if (!token || !/^[a-f0-9]{64}$/.test(token)) token = randomBytes(32).toString("hex");
     await db.insert(videoEvents).values({ videoId: video.id, kind, watchSeconds, sessionHash: hashToken(token) });
     const response = NextResponse.json({ ok: true });

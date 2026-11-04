@@ -21,7 +21,10 @@ export async function PATCH(request: Request, { params }: Context) {
     const video = await find((await params).id);
     const body = await jsonBody(request);
     const details = videoDetails({ ...video, ...body });
-    await readyAsset(video.mediaAssetId, "video", admin.id);
+    if (video.ownerUserId) {
+      const [media] = await db.select().from(mediaAssets).where(and(eq(mediaAssets.id, video.mediaAssetId || ""), eq(mediaAssets.ownerUserId, video.ownerUserId), eq(mediaAssets.status, "ready"), eq(mediaAssets.kind, "video"))).limit(1);
+      if (!media) throw new HttpError(400, "The video upload is incomplete or invalid.");
+    } else await readyAsset(video.mediaAssetId, "video", admin.id);
     const thumb = body.thumbnailAssetId ? await readyAsset(body.thumbnailAssetId, "thumbnail", admin.id) : null;
     await db.update(videos).set({ ...details, ...(thumb ? { thumbnailAssetId: thumb.id, thumbnail: `/api/media/${thumb.id}` } : {}), publishedAt: details.status === "published" ? video.publishedAt || new Date() : video.publishedAt, updatedAt: new Date() }).where(eq(videos.id, video.id));
     return NextResponse.json({ ok: true });

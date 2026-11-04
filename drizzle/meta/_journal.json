@@ -29,6 +29,13 @@
       "when": 1793816463421,
       "tag": "0003_clean_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793820467805,
+      "tag": "0004_dapper_whizzer",
+      "breakpoints": true
     }
   ]
 }
