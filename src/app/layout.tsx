@@ -10,6 +10,7 @@ import "@fontsource/outfit/600.css";
 import "@fontsource/outfit/700.css";
 import "@fontsource/outfit/800.css";
 import "./globals.css";
+import "./theme.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
@@ -28,5 +29,5 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body><BrandIntro /><AppChrome>{children}</AppChrome><AnalyticsConsent /></body></html>;
+  return <html lang="en" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{ __html: `(function(){var v;try{v=localStorage.getItem('veltrio-theme')}catch(e){} var t=v==='light'||v==='dark'?v:'dark';try{if(v!=='light'&&v!=='dark'&&matchMedia('(prefers-color-scheme: light)').matches)t='light'}catch(e){} document.documentElement.dataset.theme=t})();` }} /></head><body><BrandIntro /><AppChrome>{children}</AppChrome><AnalyticsConsent /></body></html>;
 }
