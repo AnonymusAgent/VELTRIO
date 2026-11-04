@@ -23,7 +23,9 @@ export type PublicVideoQuery = {
   category?: string;
   creator?: string;
   query?: string;
-  sort?: "newest" | "popular";
+  sort?: "newest" | "popular" | "duration";
+  featured?: boolean;
+  trending?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -32,6 +34,8 @@ function publicVideoWhere(options: PublicVideoQuery = {}) {
   const conditions = [publishedUpload()];
   if (options.category && options.category !== "all") conditions.push(eq(videos.categorySlug, options.category));
   if (options.creator) conditions.push(eq(videos.creator, options.creator));
+  if (options.featured) conditions.push(eq(videos.isFeatured, true));
+  if (options.trending) conditions.push(eq(videos.isTrending, true));
   const query = options.query?.trim();
   if (query) {
     const pattern = `%${query}%`;
@@ -59,7 +63,7 @@ export function mapVideo(row: typeof videos.$inferSelect): Video {
 }
 export async function getPublicVideos(options: PublicVideoQuery = {}): Promise<Video[]> {
   const query = db.select().from(videos).where(publicVideoWhere(options)).orderBy(
-    ...(options.sort === "popular" ? [desc(videos.views), desc(videos.publishedAt), desc(videos.id)] : [desc(videos.publishedAt), desc(videos.id)])
+    ...(options.sort === "popular" ? [desc(videos.views), desc(videos.publishedAt), desc(videos.id)] : options.sort === "duration" ? [sql`${videos.durationSeconds} desc nulls last`, desc(videos.publishedAt), desc(videos.id)] : [desc(videos.publishedAt), desc(videos.id)])
   );
   const offset = Math.max(0, options.offset || 0);
   const rows = options.limit !== undefined
