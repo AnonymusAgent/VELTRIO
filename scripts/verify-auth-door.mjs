@@ -4,6 +4,12 @@ import { chromium, expect } from "@playwright/test";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"], ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) });
 const base = process.env.TEST_BASE_URL || "http://localhost:3000";
 
+async function sameSize(before, locator, label) {
+  const after = await locator.boundingBox();
+  assert.ok(before && after, `${label} must have bounds`);
+  assert.ok(Math.abs(before.width - after.width) < 0.5 && Math.abs(before.height - after.height) < 0.5, `${label} must retain its dimensions during animation`);
+}
+
 async function testFlow(reducedMotion) {
   const context = await browser.newContext({ viewport: { width: reducedMotion ? 1200 : 390, height: 844 }, reducedMotion: reducedMotion ? "reduce" : "no-preference" });
   const page = await context.newPage();
@@ -35,10 +41,12 @@ async function testFlow(reducedMotion) {
       await expect(page.getByText(/invalid credentials/i)).toBeVisible();
       await expect(page.locator(".auth-door-scene")).toHaveCount(0);
     }
+    const loginSize = await page.getByRole("button", { name: "Sign in", exact: true }).boundingBox();
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     const entering = page.locator(".auth-door-scene--enter");
     await expect(entering).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Signing in…" })).toBeDisabled();
+    await sameSize(loginSize, page.getByRole("button", { name: "Signing in…" }), "Sign-in button");
     await expect(page.getByRole("link", { name: "Sign in or create an account" })).toBeVisible();
     assert.equal(loginCalls, reducedMotion ? 1 : 2);
     if (reducedMotion) await expect(entering).toBeHidden();
@@ -52,10 +60,12 @@ async function testFlow(reducedMotion) {
     // Browse needs a real database; resume on a DB-independent page in this mock test.
     await page.goto(`${base}/settings`);
     await page.getByRole("button", { name: "Open profile menu" }).click();
+    const logoutSize = await page.getByRole("button", { name: "Sign out", exact: true }).boundingBox();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     const exiting = page.locator(".auth-door-scene--exit");
     await expect(exiting).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Signing out…" })).toBeDisabled();
+    await sameSize(logoutSize, page.getByRole("button", { name: "Signing out…" }), "Profile sign-out button");
     assert.equal(logoutCalls, 0, "Sign out request must follow the animation");
     if (reducedMotion) await expect(exiting).toBeHidden();
     else {
@@ -89,8 +99,10 @@ async function testAccountPageSignOut() {
   });
   try {
     await page.goto(`${base}/account`, { waitUntil: "networkidle" });
+    const logoutSize = await page.getByRole("button", { name: "Sign out", exact: true }).boundingBox();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page.locator(".auth-door-scene--exit")).toBeVisible();
+    await sameSize(logoutSize, page.getByRole("button", { name: "Signing out…" }), "Account sign-out button");
     await expect(page.getByRole("button", { name: "Open profile menu" })).toBeDisabled();
     assert.equal(logoutCalls, 0);
     await expect.poll(() => signedIn, { timeout: 6000 }).toBe(false);

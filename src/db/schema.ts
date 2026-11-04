@@ -18,7 +18,7 @@ export const videos = pgTable("videos", {
   description: text("description"),
   thumbnail: text("thumbnail").notNull(),
   videoUrl: text("video_url"),
-  duration: varchar("duration", { length: 20 }).default("12:34"),
+  duration: varchar("duration", { length: 20 }).default("0:00"),
   views: integer("views").default(0),
   likes: integer("likes").default(0),
   categorySlug: varchar("category_slug", { length: 120 }),

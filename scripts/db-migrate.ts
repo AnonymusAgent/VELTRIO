@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
+import { auditSnapshot, readSnapshot } from "./schema-audit";
 
 // Applies the SQL migrations in ./drizzle to the database. Uses the DIRECT
 // (non-pooled) DATABASE_URL because migrations run DDL in a transaction and
@@ -20,13 +21,28 @@ async function main() {
   }
 
   const pool = new Pool({ connectionString: url, max: 1 });
-  const db = drizzle(pool);
-
+  let client: PoolClient | undefined;
+  let locked = false;
   try {
-    await baselineIfSchemaAlreadyExists(pool);
+    client = await pool.connect();
+    // Preview and production builds may run together against one database.
+    // Keep the lock and migration transaction on the same direct connection.
+    await client.query("select pg_advisory_lock(6577202)");
+    locked = true;
+    const db = drizzle(client);
+    await baselineIfSchemaAlreadyExists(client);
     await migrate(db, { migrationsFolder: "./drizzle" });
-    console.log("Database migrations are up to date.");
+    const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8")) as { entries: { tag: string }[] };
+    const latest = journal.entries.at(-1);
+    if (!latest) throw new Error("Migration journal is empty; schema cannot be verified.");
+    const problems = await auditSnapshot(client, readSnapshot(latest.tag));
+    if (problems.length) throw new Error(`Database schema does not match the latest migration:\n${problems.join("\n")}`);
+    console.log("Database migrations and schema audit are up to date.");
   } finally {
+    if (client) {
+      try { if (locked) await client.query("select pg_advisory_unlock(6577202)"); }
+      finally { client.release(); }
+    }
     await pool.end();
   }
 }
@@ -34,7 +50,7 @@ async function main() {
 // If the app tables already exist (for example they were created earlier with
 // `drizzle-kit push`) but no migrations have been recorded yet, mark the first
 // migration as applied instead of re-running its CREATE TABLE statements.
-async function baselineIfSchemaAlreadyExists(pool: Pool) {
+async function baselineIfSchemaAlreadyExists(pool: PoolClient) {
   const journal = JSON.parse(readFileSync("./drizzle/meta/_journal.json", "utf8")) as {
     entries: { tag: string; when: number }[];
   };
@@ -50,6 +66,11 @@ async function baselineIfSchemaAlreadyExists(pool: Pool) {
     appliedCount = (await pool.query("select count(*)::int as n from drizzle.__drizzle_migrations")).rows[0].n;
   }
   if (appliedCount > 0) return; // Migrations already tracked: nothing to baseline.
+
+  // A videos table alone is not evidence that the entire initial migration was
+  // applied. Refuse to baseline a partial or incompatible legacy database.
+  const problems = await auditSnapshot(pool, readSnapshot(first.tag));
+  if (problems.length) throw new Error(`Cannot safely baseline an incomplete existing schema:\n${problems.join("\n")}`);
 
   const sqlText = readFileSync(`./drizzle/${first.tag}.sql`, "utf8");
   const hash = createHash("sha256").update(sqlText).digest("hex");

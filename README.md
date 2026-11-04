@@ -81,7 +81,7 @@ BLOB_READ_WRITE_TOKEN=your-server-only-vercel-blob-token
 
 Admin Blob uploads use Vercel Blob client uploads, server-issued constrained tokens, server-side file-signature validation, database metadata, quota reservations, and the same `/api/media/[id]` proxy. Published media is cached. Blob uploads currently use public Blob URLs; the media proxy protects drafts but public Blob URLs must not be treated as private if discovered. Use a private storage adapter before relying on draft confidentiality. Apply the `0003` migration before using Blob-backed rows; it adds the provider discriminator and expands the storage-key column for object URLs.
 
-The default quota is 10 GB (`UPLOAD_STORAGE_GB`) and counts both providers. File signatures are validated, so a renamed file cannot masquerade as a valid video or image. If a Blob upload completes but database finalization fails, the finalize endpoint attempts to remove the orphaned object; the cleanup command also removes unclaimed Blob objects older than the configured cleanup age. Schedule `npm run storage:cleanup` from your deployment host.
+The default quota is 10 GB (`UPLOAD_STORAGE_GB`) and counts both providers. File signatures are validated, so a renamed file cannot masquerade as a valid video or image. If a Blob upload completes but database finalization fails, the endpoint leaves the object intact to avoid deleting an already-referenced upload; the cleanup command removes unclaimed Blob objects older than the configured cleanup age. Schedule `npm run storage:cleanup` from your deployment host.
 
 ## Ads
 

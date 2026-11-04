@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { del as deleteBlob, head } from "@vercel/blob";
+import { head } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -20,14 +20,12 @@ function blobUrl(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  let uploadedUrl: string | null = null;
   try {
     assertSameOrigin(request);
     if (process.env.STORAGE_PROVIDER !== "vercel_blob" || !process.env.BLOB_READ_WRITE_TOKEN) throw new HttpError(503, "Durable blob storage is not configured.");
     const admin = await requireAdmin();
     const body = await jsonBody(request);
     const url = blobUrl(body.url);
-    uploadedUrl = url;
     const filename = String(body.filename || "").slice(0, 250);
     const kind = String(body.kind || "");
     const blob = await head(url);
@@ -36,11 +34,15 @@ export async function POST(request: Request) {
     if (blob.contentType && blob.contentType !== info.mime) throw new HttpError(400, "The blob content type does not match its extension.");
     const [existing] = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(eq(mediaAssets.storageKey, url)).limit(1);
     if (existing) return NextResponse.json({ id: existing.id, url: `/api/media/${existing.id}`, status: "ready" });
-    await verifyRemoteSignature(url, info.mime);
     const id = randomUUID();
 
-    await db.transaction(async tx => {
+    const assetId = await db.transaction(async tx => {
       await tx.execute(sql`select pg_advisory_xact_lock(6577201)`);
+      // Finalization can be retried or arrive concurrently. Check again under
+      // the reservation lock so one blob never gets duplicate database rows.
+      const [existingAsset] = await tx.select({ id: mediaAssets.id }).from(mediaAssets).where(eq(mediaAssets.storageKey, url)).limit(1);
+      if (existingAsset) return existingAsset.id;
+      await verifyRemoteSignature(url, info.mime);
       const [usage] = await tx.select({ total: sql<number>`coalesce(sum(${mediaAssets.size}), 0)` }).from(mediaAssets);
       if (Number(usage.total) + blob.size > STORAGE_QUOTA) throw new HttpError(413, "The server storage allowance is full. Delete unused uploads or increase UPLOAD_STORAGE_GB.");
       await tx.insert(mediaAssets).values({
@@ -55,11 +57,13 @@ export async function POST(request: Request) {
         received: blob.size,
         status: "ready",
       });
+      return id;
     });
-    uploadedUrl = null;
-    return NextResponse.json({ id, url: `/api/media/${id}`, status: "ready" });
+    return NextResponse.json({ id: assetId, url: `/api/media/${assetId}`, status: "ready" });
   } catch (error) {
-    if (uploadedUrl) await deleteBlob(uploadedUrl).catch(() => {});
+    // A supplied URL may already be referenced (or a DB commit may have
+    // succeeded). Never delete it here; aged, unreferenced blobs are cleaned
+    // up separately after checking database references.
     return apiError(error);
   }
 }
