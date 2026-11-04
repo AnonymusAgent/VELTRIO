@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "@fontsource/manrope/400.css";
 import "@fontsource/manrope/500.css";
@@ -13,6 +13,13 @@ import "./globals.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0c0d14",
+};
 
 export const metadata: Metadata = {
   title: { default: `${BRAND_NAME} — ${BRAND_TAGLINE}`, template: `%s | ${BRAND_NAME}` },

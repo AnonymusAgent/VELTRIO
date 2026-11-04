@@ -19,7 +19,7 @@ async function serve(request: Request, { params }: { params: Promise<{ id: strin
     if (!published && (await getAdmin())?.id !== asset.adminId) throw new HttpError(404, "Media not found.");
     const filename = assetPath(asset.storageKey);
     const { size } = await stat(filename);
-    const headers = new Headers({ "Content-Type": asset.mimeType, "Accept-Ranges": "bytes", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" });
+    const headers = new Headers({ "Content-Type": asset.mimeType, "Accept-Ranges": "bytes", "Cache-Control": published ? "public, max-age=300, must-revalidate" : "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" });
     if (new URL(request.url).searchParams.get("download") === "1") headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(asset.filename)}`);
     let start = 0, end = size - 1, status = 200;
     const range = request.headers.get("range");

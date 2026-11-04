@@ -35,4 +35,7 @@ export type AdminProfile = {
   mustChangePassword: boolean;
   introEnabled: boolean;
   passwordChangedAt: string;
+  creatorSlug: string;
+  creatorDisplayName: string;
+  creatorBio: string;
 };
