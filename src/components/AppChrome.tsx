@@ -5,10 +5,9 @@ import Header from "./Header";
 import { ThemeProvider } from "./ThemeProvider";
 import Footer from "./Footer";
 import { AuthTransitionProvider } from "./AuthTransition";
-import { AdSenseScript } from "./AdSense";
 
 export default function AppChrome({ children }: { children: ReactNode }) {
   const path = usePathname();
   if (path.startsWith("/admin")) return <>{children}</>;
-  return <ThemeProvider><AuthTransitionProvider><div className="public-app"><AdSenseScript /><a className="skip-link" href="#main-content">Skip to content</a><Header /><main id="main-content" tabIndex={-1}>{children}</main><Footer /></div></AuthTransitionProvider></ThemeProvider>;
+  return <ThemeProvider><AuthTransitionProvider><div className="public-app"><a className="skip-link" href="#main-content">Skip to content</a><Header /><main id="main-content" tabIndex={-1}>{children}</main><Footer /></div></AuthTransitionProvider></ThemeProvider>;
 }

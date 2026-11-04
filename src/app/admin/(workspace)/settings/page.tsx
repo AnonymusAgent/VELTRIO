@@ -5,7 +5,7 @@ import { adminSessions } from "@/db/schema";
 import { getAdmin } from "@/lib/admin-auth";
 import { getStorageUsage } from "@/lib/video-store";
 import { STORAGE_QUOTA } from "@/lib/storage";
-import { adsenseConfig } from "@/lib/adsense";
+import { getPrerollPath } from "@/lib/video-ad";
 import { ensureCreatorProfile } from "@/lib/creator-store";
 import AdminSettings from "@/components/admin/AdminSettings";
 export const metadata = { title: "Account & settings" };
@@ -17,5 +17,5 @@ export default async function SettingsPage() {
     getStorageUsage(),
     ensureCreatorProfile(admin.id),
   ]);
-  return <AdminSettings profile={{ email: admin.email, name: admin.name, mustChangePassword: admin.mustChangePassword, introEnabled: admin.introEnabled, passwordChangedAt: admin.passwordChangedAt.toISOString(), creatorSlug: creator.slug, creatorDisplayName: creator.displayName, creatorBio: creator.bio }} sessionCount={Number(sessions[0].count)} storage={storage.size} quota={STORAGE_QUOTA} adsConfigured={adsenseConfig.isConfigured} />;
+  return <AdminSettings profile={{ email: admin.email, name: admin.name, mustChangePassword: admin.mustChangePassword, introEnabled: admin.introEnabled, passwordChangedAt: admin.passwordChangedAt.toISOString(), creatorSlug: creator.slug, creatorDisplayName: creator.displayName, creatorBio: creator.bio }} sessionCount={Number(sessions[0].count)} storage={storage.size} quota={STORAGE_QUOTA} adsConfigured={Boolean(getPrerollPath())} />;
 }
