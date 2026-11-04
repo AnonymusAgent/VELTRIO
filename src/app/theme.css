@@ -1,0 +1,74 @@
+/* Public appearance controls. Admin remains in its original, separate dark theme. */
+.theme-toggle{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid #343750;border-radius:9px;background:#191b2a;color:#d3cfff}
+.theme-toggle:hover{background:#292b40;color:#fff}
+@media(max-width:480px){.theme-toggle{width:36px;height:36px}.public-header-inner{gap:7px}}
+
+html[data-theme="light"] body:has(.public-app){color-scheme:light;--bg:#f7f7fb;--panel:#fff;--panel-hover:#f2f1fa;--line:#e2e2ec;--muted:#626578;--accent:#6654d8;--accent-soft:#007e7b;background:var(--bg);color:#202232}
+html[data-theme="light"] .public-header{background:#fff;border-color:#e7e7ef}
+html[data-theme="light"] .public-app .brand-wordmark{color:#202232}
+html[data-theme="light"] .public-nav{color:#5e6073}
+html[data-theme="light"] .public-nav a.active{color:#242238}
+html[data-theme="light"] .header-search,html[data-theme="light"] .public-app .admin-search{background:#f5f5fa;border-color:#e3e3ee;color:#6f7183}
+html[data-theme="light"] .header-search input,html[data-theme="light"] .public-app .admin-search input{color:#262737}
+html[data-theme="light"] .header-studio{color:#4c4f64}
+html[data-theme="light"] .header-studio:hover,html[data-theme="light"] .footer-links a:hover,html[data-theme="light"] .section-heading>a:hover{color:#6552d5}
+html[data-theme="light"] .theme-toggle,html[data-theme="light"] .public-app .icon-button{background:#f5f4fb;border-color:#e1e0ec;color:#55516e}
+html[data-theme="light"] .theme-toggle:hover,html[data-theme="light"] .public-app .icon-button:hover{background:#ebe9f8;color:#5744cc}
+html[data-theme="light"] .profile-dropdown{background:#fff;border-color:#e3e2ee;box-shadow:0 18px 42px #29234624}
+html[data-theme="light"] .profile-dropdown a,html[data-theme="light"] .profile-dropdown button{color:#4a4c60}
+html[data-theme="light"] .profile-dropdown a:hover,html[data-theme="light"] .profile-dropdown button:hover{background:#f1effb;color:#4f3dc3}
+html[data-theme="light"] .profile-heading{border-color:#e8e7f0}
+html[data-theme="light"] .profile-heading strong{color:#262538}
+html[data-theme="light"] .profile-heading span{color:#686a7a}
+@media(max-width:760px){html[data-theme="light"] .public-header .public-nav{background:#fff;border-color:#e1e1ec;box-shadow:0 18px 36px #29234624}html[data-theme="light"] .public-header .public-nav a:hover,html[data-theme="light"] .public-header .public-nav a.active{background:#f0eefa;color:#4e3cb7}}
+
+/* Keep the cinematic image treatment dark in either theme. */
+html[data-theme="light"] .cinema-hero{color:#f8f7ff}
+html[data-theme="light"] .cinema-hero .vh-button.ghost{color:#fff;border-color:#b9b3d2;background:#14121b66}
+html[data-theme="light"] .public-app .vh-panel{box-shadow:0 8px 28px #29234608}
+html[data-theme="light"] .public-app .vh-button.secondary{background:#f2f1f8;border-color:#dedde9;color:#3d3d50;box-shadow:none}
+html[data-theme="light"] .public-app .vh-button.secondary:hover{background:#e9e7f6}
+html[data-theme="light"] .public-app .vh-button.ghost:not(.cinema-hero .vh-button){border-color:#dad9e7;color:#3d3d50}
+html[data-theme="light"] .genre-card,html[data-theme="light"] .stat-card{background:#fff;border-color:#e4e3ee;box-shadow:0 8px 22px #29234608}
+html[data-theme="light"] .genre-card:hover{background:#f4f2fc;border-color:#d3cdec}
+html[data-theme="light"] .genre-card small,html[data-theme="light"] .browse-heading p,html[data-theme="light"] .empty-state p,html[data-theme="light"] .stat-card p,html[data-theme="light"] .stat-card-top{color:#6c6e7e}
+html[data-theme="light"] .empty-library{background:linear-gradient(110deg,#f1effc,#fff);border-color:#e2dff0}
+html[data-theme="light"] .empty-library p,html[data-theme="light"] .creator-banner p{color:#626478}
+html[data-theme="light"] .creator-banner{background:linear-gradient(120deg,#eeeafd,#f8f8fd);border-color:#e1dcf5}
+html[data-theme="light"] .creator-banner .vh-button.light{background:#5744c6;color:#fff}
+html[data-theme="light"] .filter-chip{background:#fff;border-color:#e1e1eb;color:#55586b}
+html[data-theme="light"] .filter-chip.active{background:#e9e5fa;border-color:#c5bbee;color:#4937b2}
+html[data-theme="light"] .public-app .vh-field{background:#fafafe;border-color:#dcdce9;color:#242536}
+html[data-theme="light"] .public-app .vh-label{color:#38394d}
+html[data-theme="light"] .public-app main :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not(.admin-search input){background:#fafafe;border-color:#dcdce9;color:#242536}
+html[data-theme="light"] .public-app main :is(input,select,textarea)::placeholder{color:#7c7d8d}
+html[data-theme="light"] .public-app main :is(.text-white,.text-zinc-100,.text-zinc-200,.text-zinc-300):not(.vh-button):not(button){color:#292b3b}
+html[data-theme="light"] .public-app main :is(.text-zinc-400,.text-zinc-500,.text-zinc-600){color:#626577}
+html[data-theme="light"] .public-app main :is(.text-\[\#9b8cff\],.text-\[\#9f96ff\],.text-\[\#a99bff\],.text-\[\#b9b2ff\]){color:#5e4ac6}
+html[data-theme="light"] .public-app main :is(.text-red-300,.text-red-200){color:#a42638}
+html[data-theme="light"] .public-app main :is(.text-amber-300){color:#86520b}
+html[data-theme="light"] .public-app main :is(.text-emerald-400){color:#087653}
+html[data-theme="light"] .public-app main :is(.bg-zinc-900,.bg-zinc-900\/50){background:#f7f7fb}
+html[data-theme="light"] .public-app main :is(.border-zinc-800,.border-white\/10){border-color:#e2e2eb}
+html[data-theme="light"] .panel-heading,html[data-theme="light"] .admin-table td{border-color:#e9e8f0}
+html[data-theme="light"] .admin-table th{background:#f6f6fa;color:#626477}
+html[data-theme="light"] .admin-table td{color:#55576b}
+html[data-theme="light"] .public-footer{background:#f0f0f7;border-color:#e1e1ea}
+html[data-theme="light"] .footer-bottom{border-color:#dcdce7;color:#686b7c}
+html[data-theme="light"] .footer-top p,html[data-theme="light"] .footer-links{color:#626577}
+html[data-theme="light"] aside[aria-label="Analytics cookie choices"]{background:#fff;border-color:#dedeea;box-shadow:0 16px 42px #29234630}
+html[data-theme="light"] aside[aria-label="Analytics cookie choices"] .text-zinc-200{color:#3b3d50}
+@media(min-width:761px) and (max-width:900px){.public-header-inner{gap:16px;padding-left:20px;padding-right:20px}.public-nav{gap:18px}}
+html[data-theme="light"] .genre-card svg{filter:brightness(.72) saturate(1.2)}
+html[data-theme="light"] aside[aria-label="Analytics cookie choices"] .vh-button.secondary{background:#f2f1f8;border-color:#dedde9;color:#3d3d50;box-shadow:none}
+
+/* Media backdrops stay dark, while the surrounding controls and creator tools adapt. */
+html[data-theme="light"] .creator-profile-hero{color:#f8f7ff}
+html[data-theme="light"] .public-app main .creator-profile-hero .eyebrow{color:#c7bfff}
+html[data-theme="light"] .public-app main .video-player-shell .text-red-200{color:#fecaca}
+html[data-theme="light"] .report-form{background:#fff;border-color:#dfdfeb;box-shadow:0 14px 35px #29234620}
+html[data-theme="light"] .report-form label span,html[data-theme="light"] .check-row{color:#616475}
+html[data-theme="light"] .report-error{color:#a42638}
+html[data-theme="light"] .report-confirmation{color:#087653}
+html[data-theme="light"] .public-app .table-title strong{color:#333548}
+html[data-theme="light"] .video-tile-info .eyebrow{color:#6652c6}

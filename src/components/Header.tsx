@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import { BrandLogo } from "./Brand";
 import ProfileMenu from "./ProfileMenu";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
   const path = usePathname();
@@ -15,5 +16,5 @@ export default function Header() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
-  return <header className="public-header"><div className="public-header-inner"><BrandLogo /><nav id="public-navigation" className={open ? "public-nav is-open" : "public-nav"} aria-label="Main navigation">{[{ label: "Discover", href: "/" }, { label: "Browse", href: "/browse" }, { label: "My list", href: "/my-list" }, { label: "Creator studio", href: "/studio" }, { label: "Settings", href: "/settings" }].map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={path === item.href ? "active" : ""}>{item.label}</Link>)}</nav><form action="/search" className="header-search"><Search size={16} /><input name="q" aria-label="Search videos" placeholder="Find your next story" /></form><ProfileMenu /><button type="button" className="mobile-menu icon-button" onClick={() => setOpen(current => !current)} aria-expanded={open} aria-controls="public-navigation" aria-label={open ? "Close menu" : "Open menu"}>{open ? <X /> : <Menu />}</button></div></header>;
+  return <header className="public-header"><div className="public-header-inner"><BrandLogo /><nav id="public-navigation" className={open ? "public-nav is-open" : "public-nav"} aria-label="Main navigation">{[{ label: "Discover", href: "/" }, { label: "Browse", href: "/browse" }, { label: "My list", href: "/my-list" }, { label: "Creator studio", href: "/studio" }, { label: "Settings", href: "/settings" }].map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={path === item.href ? "active" : ""}>{item.label}</Link>)}</nav><form action="/search" className="header-search"><Search size={16} /><input name="q" aria-label="Search videos" placeholder="Find your next story" /></form><ProfileMenu /><ThemeToggle /><button type="button" className="mobile-menu icon-button" onClick={() => setOpen(current => !current)} aria-expanded={open} aria-controls="public-navigation" aria-label={open ? "Close menu" : "Open menu"}>{open ? <X /> : <Menu />}</button></div></header>;
 }
