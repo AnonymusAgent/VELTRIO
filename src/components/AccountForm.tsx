@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createAuthClient } from "@neondatabase/auth/next";
+import { accountErrorMessage } from "@/lib/account-errors";
 
 const auth = createAuthClient();
 export default function AccountForm() {
@@ -18,9 +19,9 @@ export default function AccountForm() {
       const result = signup
         ? await auth.signUp.email({ email, password, name: String(form.get("name") || "") })
         : await auth.signIn.email({ email, password });
-      if (result.error) setMessage(result.error.message || "Could not authenticate. Please try again.");
+      if (result.error) setMessage(accountErrorMessage(result.error));
       else if (signup) setMessage("Account created. If verification is required, check your email before signing in.");
-    } catch { setMessage("Account service is unavailable. Please try again later."); }
+    } catch (error) { setMessage(accountErrorMessage(error)); }
     finally { setBusy(false); }
   }
   if (isPending) return <p>Loading account…</p>;
