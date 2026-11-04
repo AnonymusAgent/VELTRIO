@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { ArrowLeft, Flag, Eye, CalendarDays } from "lucide-react";
 import { formatViews } from "@/lib/data";
+import { getSiteBase } from "@/lib/site-url";
 import { getCommentsForVideo, getPublicVideo, getPublicVideos } from "@/lib/video-store";
 import VideoCard from "@/components/VideoCard";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -16,11 +16,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const video = await getPublicVideo((await params).slug);
   if (!video) return { title: "Video not found" };
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "localhost:3000";
-  const protocol = requestHeaders.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`;
-  return { metadataBase: new URL(origin), title: video.title, description: video.description.slice(0, 180), openGraph: { type: "video.other", title: video.title, description: video.description.slice(0, 180), images: [video.thumbnail] } };
+  return { metadataBase: new URL(await getSiteBase()), title: video.title, description: video.description.slice(0, 180), openGraph: { type: "video.other", title: video.title, description: video.description.slice(0, 180), images: [video.thumbnail] } };
 }
 export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
   const video = await getPublicVideo((await params).slug);

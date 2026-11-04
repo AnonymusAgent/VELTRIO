@@ -1,20 +1,18 @@
 export type Video = {
   id: number; title: string; slug: string; description: string; thumbnail: string; duration: string;
-  views: number; likes: number; category: string; categorySlug: string; creator: string; creatorAvatar: string;
-  isTrending?: boolean; isFeatured?: boolean; isHd?: boolean; tags: string[]; publishedAt: string;
-  videoUrl?: string | null; sourceType?: string; durationSeconds?: number | null; mimeType?: string | null;
+  views: number; likes: number; category: string; categorySlug: string;
+  isFeatured?: boolean; publishedAt: string; videoUrl?: string | null;
 };
 
 export const CATEGORIES = [
-  { name: "Short films", slug: "short-films", description: "Small running times. Big ideas.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
-  { name: "Travel & adventure", slug: "travel-adventure", description: "A new perspective, somewhere new.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
-  { name: "Music & live", slug: "music-live", description: "Turn it up. Feel every moment.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
-  { name: "Life & culture", slug: "life-culture", description: "Extraordinary stories from everyday life.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
-  { name: "Creative & design", slug: "creative-design", description: "A little inspiration goes a long way.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
-  { name: "Learning", slug: "learning", description: "Follow your curiosity.", thumbnail: "/images/video-hub-landscape.jpg", count: 0 },
+  { name: "Short films", slug: "short-films", description: "Small running times. Big ideas.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Travel & adventure", slug: "travel-adventure", description: "A new perspective, somewhere new.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Music & live", slug: "music-live", description: "Turn it up. Feel every moment.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Life & culture", slug: "life-culture", description: "Extraordinary stories from everyday life.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Creative & design", slug: "creative-design", description: "A little inspiration goes a long way.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Learning", slug: "learning", description: "Follow your curiosity.", thumbnail: "/images/video-hub-landscape.jpg" },
 ];
 // The library is populated exclusively by direct admin uploads. No external/demo videos.
-export const VIDEOS: Video[] = [];
 export function formatViews(n: number) {
   return Intl.NumberFormat("en", { notation: n >= 1000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n);
 }

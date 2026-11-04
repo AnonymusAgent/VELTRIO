@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, adminSessions, authAttempts } from "@/db/schema";
 import { ADMIN_EMAIL } from "@/lib/admin-shared";
-import { ADMIN_COOKIE, EMBEDDED_ADMIN_COOKIE, getAdmin, ensureAdmin, attachSession, clearSession, hashPassword, hashToken, throttle, validatePassword, verifyPassword } from "@/lib/admin-auth";
+import { ADMIN_COOKIE, EMBEDDED_ADMIN_COOKIE, getAdmin, ensureAdmin, attachSession, clearSession, hashPassword, hashToken, isSessionToken, throttle, validatePassword, verifyPassword } from "@/lib/admin-auth";
 import { assertSameOrigin, jsonBody, apiError, HttpError } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
       const store = await cookies();
       for (const name of [ADMIN_COOKIE, EMBEDDED_ADMIN_COOKIE]) {
         const token = store.get(name)?.value;
-        if (token && /^[a-f0-9]{64}$/.test(token)) await db.delete(adminSessions).where(eq(adminSessions.id, hashToken(token)));
+        if (isSessionToken(token)) await db.delete(adminSessions).where(eq(adminSessions.id, hashToken(token)));
       }
       return clearSession(NextResponse.json({ ok: true }));
     }

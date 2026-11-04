@@ -17,11 +17,9 @@ export const videos = pgTable("videos", {
   description: text("description"),
   thumbnail: text("thumbnail").notNull(),
   videoUrl: text("video_url"),
-  embedUrl: text("embed_url"),
   duration: varchar("duration", { length: 20 }).default("12:34"),
   views: integer("views").default(0),
   likes: integer("likes").default(0),
-  categoryId: integer("category_id").references(() => categories.id),
   categorySlug: varchar("category_slug", { length: 120 }),
   categoryName: varchar("category_name", { length: 120 }),
   creator: varchar("creator", { length: 160 }).default("Video Hub"),
@@ -34,9 +32,6 @@ export const videos = pgTable("videos", {
   createdAt: timestamp("created_at").defaultNow(),
   status: varchar("status", { length: 30 }).default("published").notNull(),
   sourceType: varchar("source_type", { length: 30 }).default("curated").notNull(),
-  sourceUrl: text("source_url"),
-  telegramPostUrl: text("telegram_post_url"),
-  telegramFileId: text("telegram_file_id"),
   durationSeconds: integer("duration_seconds"),
   mimeType: varchar("mime_type", { length: 120 }),
   mediaAssetId: varchar("media_asset_id", { length: 36 }),
@@ -85,35 +80,6 @@ export const mediaAssets = pgTable("media_assets", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const telegramPosts = pgTable("telegram_posts", {
-  id: serial("id").primaryKey(),
-  sourceKey: varchar("source_key", { length: 200 }).notNull().unique(),
-  updateId: integer("update_id"),
-  telegramMessageId: integer("telegram_message_id").notNull(),
-  telegramChatId: varchar("telegram_chat_id", { length: 100 }).notNull(),
-  channelTitle: varchar("channel_title", { length: 200 }),
-  telegramPostUrl: text("telegram_post_url"),
-  title: varchar("title", { length: 300 }).notNull(),
-  caption: text("caption"),
-  description: text("description"),
-  sourceUrl: text("source_url"),
-  videoUrl: text("video_url"),
-  thumbnailUrl: text("thumbnail_url"),
-  telegramFileId: text("telegram_file_id"),
-  telegramThumbnailFileId: text("telegram_thumbnail_file_id"),
-  mimeType: varchar("mime_type", { length: 120 }),
-  fileSize: bigint("file_size", { mode: "number" }),
-  durationSeconds: integer("duration_seconds"),
-  sourceType: varchar("source_type", { length: 30 }).default("external").notNull(),
-  categorySlug: varchar("category_slug", { length: 120 }).default("viral-clips"),
-  status: varchar("status", { length: 30 }).default("pending").notNull(),
-  videoId: integer("video_id").references(() => videos.id),
-  lastError: text("last_error"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  publishedAt: timestamp("published_at"),
-});
-
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   videoId: integer("video_id").references(() => videos.id),
@@ -122,17 +88,6 @@ export const comments = pgTable("comments", {
   email: varchar("email", { length: 200 }),
   body: text("body").notNull(),
   likes: integer("likes").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const submissions = pgTable("submissions", {
-  id: serial("id").primaryKey(),
-  title: varchar("title", { length: 300 }).notNull(),
-  url: text("url").notNull(),
-  category: varchar("category", { length: 120 }),
-  description: text("description"),
-  email: varchar("email", { length: 200 }),
-  status: varchar("status", { length: 30 }).default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -155,20 +110,3 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const newsletter = pgTable("newsletter", {
-  id: serial("id").primaryKey(),
-  email: varchar("email", { length: 200 }).notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const adSettings = pgTable("ad_settings", {
-  id: serial("id").primaryKey(),
-  publisherId: varchar("publisher_id", { length: 100 }),
-  headerSlot: varchar("header_slot", { length: 100 }),
-  sidebarSlot: varchar("sidebar_slot", { length: 100 }),
-  inFeedSlot: varchar("in_feed_slot", { length: 100 }),
-  videoSlot: varchar("video_slot", { length: 100 }),
-  footerSlot: varchar("footer_slot", { length: 100 }),
-  autoAdsEnabled: boolean("auto_ads_enabled").default(true),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});

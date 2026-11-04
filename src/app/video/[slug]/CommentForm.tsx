@@ -26,13 +26,14 @@ export default function CommentForm({ slug }: { slug: string }) {
     } finally { setLoading(false); }
   }
 
+  const fieldClass = "rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-rose-500 focus:outline-none";
   return (
     <form onSubmit={onSubmit} className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <input name="name" required placeholder="Your name" className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-rose-500 focus:outline-none" />
-        <input name="email" type="email" placeholder="Email (optional)" className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-rose-500 focus:outline-none" />
+        <input name="name" required placeholder="Your name" className={fieldClass} />
+        <input name="email" type="email" placeholder="Email (optional)" className={fieldClass} />
       </div>
-      <textarea name="body" required rows={3} placeholder="Share your thoughts..." className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-rose-500 focus:outline-none" />
+      <textarea name="body" required rows={3} placeholder="Share your thoughts..." className={`mt-3 w-full ${fieldClass}`} />
       <div className="mt-3 flex items-center gap-3">
         <button disabled={loading} className="rounded-full bg-rose-600 px-5 py-2 text-sm font-bold text-white hover:bg-rose-500 disabled:opacity-50">{loading ? "Posting..." : "Post Comment"}</button>
         {done && <span className="text-sm font-semibold text-emerald-400">Comment posted.</span>}
