@@ -53,6 +53,8 @@ npx drizzle-kit push
 
 If a push prompts interactively in a non-TTY environment, run `npx drizzle-kit push --force`.
 
+> Upgrading an existing database: tables from retired integrations (`telegram_posts`, `submissions`, `ad_settings`, `newsletter`) and the unused `embed_url`, `source_url`, `telegram_post_url`, `telegram_file_id`, `category_id` columns were removed from the schema. `drizzle-kit push` will drop them if they exist — back up first if you need that historical data.
+
 > `drizzle.config.json` ships with the local development connection string. Update its `dbCredentials.url` to your production database before running migrations against a hosted database, or run `drizzle-kit` with your own config.
 
 ## Uploads and storage

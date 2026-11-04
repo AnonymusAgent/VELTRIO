@@ -1,4 +1,5 @@
 import { randomBytes, scrypt, timingSafeEqual, createHash } from "node:crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -20,6 +21,7 @@ function cookieOptions(embedded: boolean) {
   };
 }
 export function hashToken(token: string) { return createHash("sha256").update(token).digest("hex"); }
+export function isSessionToken(value: string | undefined): value is string { return Boolean(value && /^[a-f0-9]{64}$/.test(value)); }
 
 function derive(password: string, salt: string): Promise<Buffer> {
   return new Promise((resolve, reject) => scrypt(password, salt, 64, { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (error, key) => error ? reject(error) : resolve(key)));
@@ -53,16 +55,18 @@ export async function ensureAdmin() {
   return admin;
 }
 
-export async function getAdmin() {
+// Cached per request: the workspace layout and each page both resolve the
+// session, but only one database lookup is performed per render.
+export const getAdmin = cache(async () => {
   const store = await cookies();
   for (const name of [EMBEDDED_ADMIN_COOKIE, ADMIN_COOKIE]) {
     const token = store.get(name)?.value;
-    if (!token || !/^[a-f0-9]{64}$/.test(token)) continue;
+    if (!isSessionToken(token)) continue;
     const [row] = await db.select({ admin: admins, sessionId: adminSessions.id }).from(adminSessions).innerJoin(admins, eq(adminSessions.adminId, admins.id)).where(and(eq(adminSessions.id, hashToken(token)), gt(adminSessions.expiresAt, new Date()))).limit(1);
     if (row) return { ...row.admin, sessionId: row.sessionId };
   }
   return null;
-}
+});
 export async function requireAdmin() {
   const admin = await getAdmin();
   if (!admin) throw new HttpError(401, "Your session has expired. Please sign in again.");

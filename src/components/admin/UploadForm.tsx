@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UploadCloud, FileVideo, ImagePlus, X, ArrowRight, ArrowLeft, ShieldCheck, CheckCircle2, Pause, LoaderCircle, CircleAlert, Clapperboard, HardDrive } from "lucide-react";
@@ -7,10 +7,17 @@ import { CATEGORIES } from "@/lib/data";
 import { formatBytes, MAX_VIDEO_BYTES, MAX_IMAGE_BYTES } from "@/lib/admin-shared";
 import { discardUpload, forgetUpload, inspectVideo, uploadFile } from "@/lib/upload-client";
 
+// One object URL per File, cached so renders stay pure and StrictMode-safe.
+// URLs are released by the browser when the upload page is left.
+const objectUrls = new WeakMap<File, string>();
+const noSubscription = () => () => {};
 function useObjectUrl(file: File | null) {
-  const [url, setUrl] = useState("");
-  useEffect(() => { if (!file) { setUrl(""); return; } const value = URL.createObjectURL(file); setUrl(value); return () => URL.revokeObjectURL(value); }, [file]);
-  return url;
+  return useSyncExternalStore(noSubscription, () => {
+    if (!file) return "";
+    let url = objectUrls.get(file);
+    if (!url) { url = URL.createObjectURL(file); objectUrls.set(file, url); }
+    return url;
+  }, () => "");
 }
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);

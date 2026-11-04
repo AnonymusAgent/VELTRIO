@@ -5,6 +5,15 @@ import type { Video } from "./data";
 import type { AdminVideo } from "./admin-shared";
 
 export const DEFAULT_THUMBNAIL = "/images/video-hub-landscape.jpg";
+
+// The single source of truth for "visible on the public site": published
+// direct uploads only. Optionally narrowed to one slug.
+export function publishedUpload(slug?: string) {
+  const conditions = [eq(videos.status, "published"), eq(videos.sourceType, "upload")];
+  if (slug !== undefined) conditions.unshift(eq(videos.slug, slug));
+  return and(...conditions);
+}
+
 export function formatDuration(seconds?: number | null, fallback?: string | null) {
   if (!seconds || seconds < 1) return fallback || "0:00";
   const hours = Math.floor(seconds / 3600), minutes = Math.floor((seconds % 3600) / 60), secs = Math.floor(seconds % 60);
@@ -14,19 +23,17 @@ export function mapVideo(row: typeof videos.$inferSelect): Video {
   return {
     id: row.id, title: row.title, slug: row.slug, description: row.description || "", thumbnail: row.thumbnail || DEFAULT_THUMBNAIL,
     duration: formatDuration(row.durationSeconds, row.duration), views: row.views || 0, likes: row.likes || 0,
-    category: row.categoryName || "Short films", categorySlug: row.categorySlug || "short-films", creator: row.creator || "Video Hub", creatorAvatar: "/icon.svg",
-    isTrending: row.isTrending || false, isFeatured: row.isFeatured || false, isHd: row.isHd ?? true,
-    tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
-    publishedAt: (row.publishedAt || row.createdAt || new Date()).toISOString(), videoUrl: row.videoUrl, sourceType: row.sourceType,
-    durationSeconds: row.durationSeconds, mimeType: row.mimeType,
+    category: row.categoryName || "Short films", categorySlug: row.categorySlug || "short-films",
+    isFeatured: row.isFeatured || false,
+    publishedAt: (row.publishedAt || row.createdAt || new Date()).toISOString(), videoUrl: row.videoUrl,
   };
 }
 export async function getPublicVideos(): Promise<Video[]> {
-  const rows = await db.select().from(videos).where(and(eq(videos.status, "published"), eq(videos.sourceType, "upload"))).orderBy(desc(videos.publishedAt), desc(videos.id));
+  const rows = await db.select().from(videos).where(publishedUpload()).orderBy(desc(videos.publishedAt), desc(videos.id));
   return rows.map(mapVideo);
 }
 export async function getPublicVideo(slug: string) {
-  const [row] = await db.select().from(videos).where(and(eq(videos.slug, slug), eq(videos.status, "published"), eq(videos.sourceType, "upload"))).limit(1);
+  const [row] = await db.select().from(videos).where(publishedUpload(slug)).limit(1);
   return row ? mapVideo(row) : undefined;
 }
 export async function getCommentsForVideo(slug: string) {

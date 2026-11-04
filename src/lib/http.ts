@@ -4,6 +4,10 @@ export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+export function isEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || new URL(request.url).host;
