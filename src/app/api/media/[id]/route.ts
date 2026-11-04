@@ -5,6 +5,7 @@ import { and, eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import { mediaAssets, videos } from "@/db/schema";
 import { getAdmin } from "@/lib/admin-auth";
+import { userAuth } from "@/lib/user-auth";
 import { assetPath } from "@/lib/storage";
 import { apiError, HttpError } from "@/lib/http";
 
@@ -16,7 +17,14 @@ async function serve(request: Request, { params }: { params: Promise<{ id: strin
     const [asset] = await db.select().from(mediaAssets).where(and(eq(mediaAssets.id, id), eq(mediaAssets.status, "ready"))).limit(1);
     if (!asset) throw new HttpError(404, "Media not found.");
     const [published] = await db.select({ id: videos.id }).from(videos).where(and(eq(videos.status, "published"), eq(videos.sourceType, "upload"), or(eq(videos.mediaAssetId, id), eq(videos.thumbnailAssetId, id)))).limit(1);
-    if (!published && (await getAdmin())?.id !== asset.adminId) throw new HttpError(404, "Media not found.");
+    if (!published) {
+      const admin = await getAdmin();
+      let owner = false;
+      if (asset.ownerUserId) {
+        try { owner = (await userAuth().getSession()).data?.user?.id === asset.ownerUserId; } catch { /* No user session. */ }
+      }
+      if (!owner && !admin) throw new HttpError(404, "Media not found.");
+    }
     const headers = new Headers({ "Content-Type": asset.mimeType, "Accept-Ranges": "bytes", "Cache-Control": published ? "public, max-age=300, must-revalidate" : "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" });
     if (new URL(request.url).searchParams.get("download") === "1") headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(asset.filename)}`);
 

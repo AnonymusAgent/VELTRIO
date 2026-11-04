@@ -12,6 +12,7 @@ export const categories = pgTable("categories", {
 
 export const videos = pgTable("videos", {
   id: serial("id").primaryKey(),
+  ownerUserId: varchar("owner_user_id", { length: 255 }),
   title: varchar("title", { length: 300 }).notNull(),
   slug: varchar("slug", { length: 320 }).notNull().unique(),
   description: text("description"),
@@ -44,6 +45,7 @@ export const videos = pgTable("videos", {
   categoryIdx: index("videos_category_idx").on(table.categorySlug, table.status),
   creatorIdx: index("videos_creator_idx").on(table.creator, table.status),
   mediaAssetIdx: index("videos_media_asset_idx").on(table.mediaAssetId),
+  ownerUserIdx: index("videos_owner_user_idx").on(table.ownerUserId),
 }));
 
 export const admins = pgTable("admins", {
@@ -76,7 +78,8 @@ export const authAttempts = pgTable("auth_attempts", {
 
 export const mediaAssets = pgTable("media_assets", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  adminId: integer("admin_id").notNull().references(() => admins.id),
+  adminId: integer("admin_id").references(() => admins.id),
+  ownerUserId: varchar("owner_user_id", { length: 255 }),
   kind: varchar("kind", { length: 20 }).notNull(),
   filename: varchar("filename", { length: 255 }).notNull(),
   storageKey: varchar("storage_key", { length: 2048 }).notNull(),
@@ -88,6 +91,7 @@ export const mediaAssets = pgTable("media_assets", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   adminStatusIdx: index("media_assets_admin_status_idx").on(table.adminId, table.status),
+  ownerUserIdx: index("media_assets_owner_user_idx").on(table.ownerUserId),
 }));
 
 export const comments = pgTable("comments", {
@@ -170,4 +174,14 @@ export const moderationReports = pgTable("moderation_reports", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   reportStatusIdx: index("moderation_reports_status_idx").on(table.status, table.createdAt),
+}));
+
+// First-party, opt-in page views. No query strings, IP addresses or user IDs are stored.
+export const pageViews = pgTable("page_views", {
+  id: serial("id").primaryKey(),
+  path: varchar("path", { length: 320 }).notNull(),
+  visitorHash: varchar("visitor_hash", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  createdIdx: index("page_views_created_idx").on(table.createdAt),
 }));

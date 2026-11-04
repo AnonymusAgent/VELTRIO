@@ -13,6 +13,8 @@ export default function VideoPlayer({ video }: { video: Video }) {
   const videoRef = useRef<VideoElementWithPip | null>(null);
   const counted = useRef(false);
   const lastSaved = useRef(0);
+  const lastTick = useRef<number | null>(null);
+  const pendingWatch = useRef(0);
   const progressKey = `watch-progress:${video.slug}`;
   const storedProgress = useLocalStorageValue(progressKey);
   const resumeAt = Number(storedProgress || 0);
@@ -26,7 +28,20 @@ export default function VideoPlayer({ video }: { video: Video }) {
   function recordEvent(kind: "play" | "progress" | "complete", watchSeconds = 0) {
     fetch(`/api/videos/${video.slug}/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, watchSeconds }) }).catch(() => {});
   }
+  function tickWatch() {
+    const now = Date.now();
+    if (lastTick.current !== null) pendingWatch.current += Math.min((now - lastTick.current) / 1000, 5);
+    lastTick.current = now;
+  }
+  function flushWatch(kind: "progress" | "complete") {
+    if (lastTick.current !== null) tickWatch();
+    const seconds = Math.floor(pendingWatch.current);
+    pendingWatch.current -= seconds;
+    lastTick.current = null;
+    recordEvent(kind, seconds);
+  }
   function countView() {
+    lastTick.current = Date.now();
     if (counted.current) return;
     counted.current = true;
     fetch(`/api/videos/${video.slug}/view`, { method: "POST" }).catch(() => {});
@@ -54,7 +69,7 @@ export default function VideoPlayer({ video }: { video: Video }) {
 
   return <div className="video-player-shell overflow-hidden rounded-xl border border-white/10 bg-black">
     <div className="video-stage">
-      <video ref={videoRef} key={video.videoUrl} src={video.videoUrl || undefined} poster={video.thumbnail} controls playsInline preload="metadata" className="aspect-video w-full bg-black object-contain" onLoadedMetadata={handleMetadata} onPlaying={countView} onTimeUpdate={event => saveProgress(event.currentTarget.currentTime)} onPause={event => { saveProgress(event.currentTarget.currentTime); recordEvent("progress", Math.floor(event.currentTarget.currentTime)); }} onEnded={() => { writeLocalStorage(progressKey, "0"); recordEvent("complete", Math.floor(videoRef.current?.duration || 0)); }} onError={() => setError(true)} aria-label={video.title}>Your browser does not support HTML5 video.</video>
+      <video ref={videoRef} key={video.videoUrl} src={video.videoUrl || undefined} poster={video.thumbnail} controls playsInline preload="metadata" className="aspect-video w-full bg-black object-contain" onLoadedMetadata={handleMetadata} onPlaying={countView} onTimeUpdate={event => { if (!event.currentTarget.paused && lastTick.current !== null) tickWatch(); saveProgress(event.currentTarget.currentTime); }} onPause={event => { saveProgress(event.currentTarget.currentTime); flushWatch("progress"); }} onEnded={() => { writeLocalStorage(progressKey, "0"); flushWatch("complete"); }} onError={() => setError(true)} aria-label={video.title}>Your browser does not support HTML5 video.</video>
       {hasResume && !resumeDismissed && <div className="video-resume-prompt" role="status"><RotateCcw size={14} /><span>Continue from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}?</span><button type="button" onClick={() => setResumeDismissed(true)}>Continue</button><button type="button" aria-label="Restart video" onClick={restart}>Restart</button></div>}
     </div>
     <div className="video-player-tools" aria-label="Player options">
