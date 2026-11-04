@@ -70,3 +70,96 @@ button:focus-visible,a:focus-visible{outline-color:#2ad9d0}
 @keyframes veltrio-intro-out{to{opacity:0;visibility:hidden}}
 @media(max-width:760px){.brand-logo .brand-wordmark{font-size:21px;letter-spacing:.15em}.intro-wordmark{font-size:32px;letter-spacing:.2em;text-indent:.2em}.brand-loading p{font-size:7px;letter-spacing:2.3px}.brand-orbit-stage{width:128px;height:128px}.intro-mark{width:98px;height:98px}}
 @media(max-width:420px){.brand-logo .brand-wordmark{font-size:18px;letter-spacing:.12em}.brand-logo{gap:6px}}
+
+/* Mobile layout and navigation */
+html,body{overflow-x:hidden}
+img,video{max-width:100%}
+@media(max-width:760px){
+  .public-header-inner{position:relative;padding:0 20px;gap:10px}
+  .public-header .brand-logo{min-width:0}
+  .public-header .brand-logo .brand-wordmark{white-space:nowrap}
+  .public-header .public-nav{display:none;position:absolute;z-index:50;top:100%;left:12px;right:12px;height:auto;margin:0;padding:10px;background:#131522;border:1px solid #30334b;border-radius:0 0 12px 12px;box-shadow:0 18px 36px #0009;flex-direction:column;align-items:stretch;gap:3px}
+  .public-header .public-nav.is-open{display:flex}
+  .public-header .public-nav a{height:auto;min-height:44px;padding:12px 13px;border-radius:8px;font-size:12px;justify-content:flex-start}
+  .public-header .public-nav a:hover,.public-header .public-nav a.active{background:#8068ff14;color:#f5f4ff}
+  .public-header .public-nav a.active:after{left:13px;bottom:5px;width:22px;height:2px;background:#2ad9d0}
+  .public-header .header-studio{margin-left:auto;flex-shrink:0}
+  .public-header .mobile-menu{display:grid;flex-shrink:0;width:40px;height:40px;border-color:#343750}
+  .public-header .mobile-menu svg{width:18px;height:18px}
+  .cinema-hero{min-height:540px}
+  .cinema-hero-content{padding-top:52px;padding-bottom:95px}
+  .cinema-hero h1{max-width:92vw;font-size:clamp(44px,14vw,62px);letter-spacing:-2px}
+  .hero-actions{flex-wrap:wrap;gap:9px;margin-top:24px}
+  .hero-actions .vh-button{flex:1 1 auto;min-width:145px;padding:13px 15px}
+  .section-heading{align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+  .section-heading h2{font-size:24px;line-height:1.15}
+  .section-heading>a{margin-top:3px;margin-left:0}
+  .catalog-toolbar .admin-search{width:100%;max-width:none!important;flex-basis:100%}
+  .catalog-toolbar>select{width:100%!important;margin-left:0!important}
+  .catalog-toolbar{margin-bottom:15px}
+  .filter-chip{padding:8px 11px;font-size:10px}
+  .video-tile-info{padding-top:10px}
+  .video-tile-info h3{font-size:14px}
+  .empty-library .vh-button{max-width:100%}
+  .admin-topbar .admin-breadcrumb{min-width:0;overflow:hidden;white-space:nowrap}
+  .admin-topbar .admin-breadcrumb b{overflow:hidden;text-overflow:ellipsis}
+  .admin-topbar-right{min-width:0}
+  .admin-table{min-width:620px}
+  .admin-page-heading{flex-wrap:wrap}
+  .admin-page-heading>div{min-width:0}
+  .admin-page-heading .vh-button{margin-left:auto}
+  .admin-notice{align-items:flex-start}
+  .admin-notice a{white-space:normal}
+  .settings-section-footer{flex-wrap:wrap}
+  .settings-section-footer .vh-button{width:100%}
+  .login-form{gap:18px}
+  .login-form>.vh-button{width:100%}
+}
+@media(max-width:480px){
+  .site-container{padding-left:16px;padding-right:16px}
+  .public-header-inner{padding-left:16px;padding-right:16px;gap:8px}
+  .public-header .brand-logo{gap:6px}
+  .public-header .brand-logo svg{width:30px;height:30px}
+  .public-header .brand-logo .brand-wordmark{font-size:16px;letter-spacing:.1em}
+  .public-header .header-studio{gap:3px}
+  .public-header .header-studio svg:first-child{width:15px;height:15px}
+  .public-header .mobile-menu{width:38px;height:38px}
+  .cinema-hero{min-height:520px}
+  .cinema-hero-content{padding-top:42px;padding-bottom:90px}
+  .cinema-hero h1{font-size:clamp(42px,14vw,54px);letter-spacing:-1.5px;margin:20px 0}
+  .cinema-hero-description{font-size:12px;line-height:1.8}
+  .hero-actions .vh-button{flex-basis:100%;width:100%}
+  .public-section{padding:24px 0}
+  .genre-grid{gap:8px}
+  .genre-card{min-height:108px;padding:14px 11px;gap:10px}
+  .genre-card b{font-size:11px}
+  .genre-card small{font-size:8px;line-height:1.45}
+  .empty-library{padding:22px 17px}
+  .empty-library h3{font-size:21px}
+  .creator-banner{padding:24px 20px;margin-bottom:35px}
+  .creator-banner h2{font-size:27px}
+  .footer-top{padding-bottom:25px}
+  .footer-links{gap:13px;font-size:9px}
+  .admin-content{padding:22px 16px 35px}
+  .admin-topbar{padding:0 16px}
+  .admin-topbar-right .site-status{display:none}
+  .admin-stats{gap:8px}
+  .stat-card{padding:13px 11px}
+  .stat-card h3{font-size:24px;margin-top:13px}
+  .admin-welcome{padding:21px;min-height:175px}
+  .admin-welcome h2{font-size:25px}
+  .admin-page-heading h1{font-size:23px}
+  .admin-page-heading .vh-button{width:100%;margin-left:0}
+  .library-toolbar{gap:10px}
+  .library-filters{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  .library-filters button{flex-shrink:0}
+  .upload-dropzone{min-height:220px;padding:18px 14px}
+  .upload-file{gap:10px;padding:13px}
+  .upload-file strong{font-size:10px}
+  .upload-success{padding:45px 18px}
+  .modal-actions{flex-direction:column-reverse}
+  .modal-actions .vh-button{width:100%}
+  .admin-footer{gap:12px;flex-direction:column}
+  .login-form-side{padding-left:20px;padding-right:20px}
+  .login-back{right:20px}
+}
