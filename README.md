@@ -7,8 +7,8 @@ A cinematic, Netflix-inspired video platform with a private admin studio for upl
 - **Public site** — homepage hero, trending, categories, search, video watch page, comments, likes, save-to-list, branded loading screen.
 - **Private admin studio** at `/admin` — dashboard, direct uploads with progress, thumbnail handling, library management, publishing controls, and account settings.
 - **Direct uploads** — videos use the configured local-volume or Vercel Blob provider and play back through the authenticated media proxy with HTTP range requests (seeking works). No Telegram, TeraBox, or third-party imports.
-- **User accounts** — Neon Auth / Better Auth email sign-up and sign-in at `/account`. The admin login remains separate.
-- **Creator studio** — `/studio` lists each signed-in creator’s own videos and views, with local-storage uploads, publishing and deletion. Earnings are marked unavailable until a real monetization and payout system is implemented.
+- **User accounts** — Neon Auth / Better Auth email sign-up and sign-in at `/account`, profile menu and account settings at `/settings/account`. The admin login remains separate. Viewing and privacy preferences are available to everyone at `/settings` and are stored in the browser.
+- **Creator studio** — `/studio` lists each signed-in creator’s own videos and views, with local filesystem uploads, thumbnails, metadata editing, publishing and deletion. Earnings are marked unavailable until a real monetization and payout system is implemented.
 - **First-party analytics** — opt-in public page views and playback events in the admin overview. The last 30 days of page views exclude query strings and IP addresses; counts are estimates and exclude people who decline analytics. Playback totals are all-time and may include events recorded by older versions before consent was introduced; older watch-time measurements are not directly comparable to the new incremental measurements.
 - **Admin authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset.
 - **Monetization ready** — Google AdSense slots (header, sidebar, in-feed, video, footer) with a setup guide at `/adsense-setup` and an auto-generated `/ads.txt`.
@@ -49,7 +49,7 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | `NEXT_PUBLIC_SITE_URL` | production | Canonical site URL, used for metadata and the sitemap. |
 | `NEXT_PUBLIC_ADSENSE_*` | no | AdSense publisher ID and slot IDs. Leave blank to show labeled placeholders. |
 
-See `.env.example` for the full list. Apply migrations before enabling creator uploads or analytics. Creator uploads currently support only `STORAGE_PROVIDER=local` and require persistent storage; Vercel Blob creator uploads are not yet supported. User signup, upload, and playback must be tested against your configured Neon Auth instance and PostgreSQL database before deployment. The new creator studio does not yet provide custom thumbnails, editing metadata, payouts, account-synced lists/subscriptions, or the full feature set of YouTube. Before opening uploads to the public, add per-user quotas, abuse controls, content moderation, operational monitoring, and cleanup for unattached finalized creator assets.
+See `.env.example` for the full list. Apply migrations before enabling creator uploads or analytics. Creator uploads currently support only `STORAGE_PROVIDER=local` and require persistent storage; Vercel Blob creator uploads are not yet supported. User signup, upload, and playback must be tested against your configured Neon Auth instance and PostgreSQL database before deployment. The creator studio does not yet provide payouts, account-synced lists/subscriptions, or the full feature set of YouTube. Creator uploads are blocked on Vercel until a suitable durable upload backend is implemented. Before opening uploads to the public, add per-user quotas, abuse controls, content moderation, operational monitoring, and cleanup for unattached finalized creator assets.
 
 ## Database
 
@@ -78,7 +78,7 @@ STORAGE_PROVIDER=vercel_blob
 BLOB_READ_WRITE_TOKEN=your-server-only-vercel-blob-token
 ```
 
-Blob uploads use Vercel Blob client uploads, server-issued constrained tokens, server-side file-signature validation, database metadata, quota reservations, and the same `/api/media/[id]` proxy. Published media is cached; draft media remains protected by the admin session check. The Blob URL is never sent to the browser as the application media URL. Apply the `0003` migration before using Blob-backed rows; it adds the provider discriminator and expands the storage-key column for object URLs.
+Admin Blob uploads use Vercel Blob client uploads, server-issued constrained tokens, server-side file-signature validation, database metadata, quota reservations, and the same `/api/media/[id]` proxy. Published media is cached. Blob uploads currently use public Blob URLs; the media proxy protects drafts but public Blob URLs must not be treated as private if discovered. Use a private storage adapter before relying on draft confidentiality. Apply the `0003` migration before using Blob-backed rows; it adds the provider discriminator and expands the storage-key column for object URLs.
 
 The default quota is 10 GB (`UPLOAD_STORAGE_GB`) and counts both providers. File signatures are validated, so a renamed file cannot masquerade as a valid video or image. If a Blob upload completes but database finalization fails, the finalize endpoint attempts to remove the orphaned object; the cleanup command also removes unclaimed Blob objects older than the configured cleanup age. Schedule `npm run storage:cleanup` from your deployment host.
 

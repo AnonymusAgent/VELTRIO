@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleAlert, Gauge, PictureInPicture2, RotateCcw } from "lucide-react";
 import type { Video } from "@/lib/data";
 import { useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
@@ -8,7 +8,10 @@ type VideoElementWithPip = HTMLVideoElement & { requestPictureInPicture?: () => 
 
 export default function VideoPlayer({ video }: { video: Video }) {
   const [error, setError] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const preferredSpeed = useLocalStorageValue("vh-playback-speed");
+  const resumeEnabled = useLocalStorageValue("vh-resume-enabled") !== "false";
+  const speedValue = Number(preferredSpeed);
+  const speed = [0.75, 1, 1.25, 1.5, 2].includes(speedValue) ? speedValue : 1;
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const videoRef = useRef<VideoElementWithPip | null>(null);
   const counted = useRef(false);
@@ -18,7 +21,9 @@ export default function VideoPlayer({ video }: { video: Video }) {
   const progressKey = `watch-progress:${video.slug}`;
   const storedProgress = useLocalStorageValue(progressKey);
   const resumeAt = Number(storedProgress || 0);
-  const hasResume = Number.isFinite(resumeAt) && resumeAt >= 5 && resumeAt < 86400;
+  const hasResume = resumeEnabled && Number.isFinite(resumeAt) && resumeAt >= 5 && resumeAt < 86400;
+
+  useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = speed; }, [speed]);
 
   function saveProgress(currentTime: number) {
     if (!Number.isFinite(currentTime) || currentTime < 1 || currentTime - lastSaved.current < 5) return;
@@ -53,7 +58,7 @@ export default function VideoPlayer({ video }: { video: Video }) {
   }
   function changeSpeed(value: string) {
     const next = Number(value);
-    setSpeed(next);
+    writeLocalStorage("vh-playback-speed", String(next));
     if (videoRef.current) videoRef.current.playbackRate = next;
   }
   async function pictureInPicture() {

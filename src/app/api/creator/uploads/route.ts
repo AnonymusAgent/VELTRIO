@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/user-auth";
 import { assertSameOrigin, jsonBody, apiError, HttpError } from "@/lib/http";
 import { validateUpload, ensureStorage, assetPath, removeAssetFile, STORAGE_QUOTA } from "@/lib/storage";
 import { CHUNK_SIZE } from "@/lib/admin-shared";
+import { creatorStorageIssue } from "@/lib/creator-storage";
 
 export const runtime = "nodejs";
 export async function POST(request: Request) {
@@ -16,7 +17,8 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const user = await requireUser();
-    if (process.env.STORAGE_PROVIDER === "vercel_blob") throw new HttpError(503, "Creator uploads are not available with this storage provider yet.");
+    const issue = creatorStorageIssue();
+    if (issue) throw new HttpError(503, issue);
     const body = await jsonBody(request);
     const filename = path.basename(String(body.filename || "")).slice(0, 250);
     const size = Number(body.size);
