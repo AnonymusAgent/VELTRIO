@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = await getSiteBase();
-  const pages = ["", "/browse", "/trending", "/privacy", "/terms", "/dmca", "/contact"];
+  const pages = ["", "/browse", "/trending", "/creator/veltrio", "/privacy", "/terms", "/dmca", "/contact"];
   const catalog = await getPublicVideos();
   return [
     ...pages.map((path) => ({ url: `${base}${path}`, lastModified: new Date(), changeFrequency: path === "" ? "hourly" as const : "weekly" as const, priority: path === "" ? 1 : 0.6 })),

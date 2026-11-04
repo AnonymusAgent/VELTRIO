@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { admins, adminSessions } from "@/db/schema";
+import { admins, adminSessions, creatorProfiles, videos } from "@/db/schema";
 import { EMBEDDED_ADMIN_COOKIE, requireAdmin, verifyPassword, hashPassword, validatePassword, attachSession, throttle } from "@/lib/admin-auth";
 import { assertSameOrigin, jsonBody, HttpError, apiError } from "@/lib/http";
 
@@ -14,8 +14,17 @@ export async function PATCH(request: Request) {
     const body = await jsonBody(request);
     if (body.action === "profile") {
       const name = String(body.name || "").trim();
+      const creatorDisplayName = String(body.creatorDisplayName || "").trim();
+      const creatorBio = String(body.creatorBio || "").trim();
       if (name.length < 2 || name.length > 100) throw new HttpError(400, "Display name must have 2–100 characters.");
-      await db.update(admins).set({ name, introEnabled: body.introEnabled === true }).where(eq(admins.id, admin.id));
+      if (creatorDisplayName.length < 2 || creatorDisplayName.length > 160) throw new HttpError(400, "Creator name must have 2–160 characters.");
+      if (creatorBio.length < 10 || creatorBio.length > 1000) throw new HttpError(400, "Creator biography must have 10–1,000 characters.");
+      await db.transaction(async tx => {
+        const [creator] = await tx.select({ displayName: creatorProfiles.displayName }).from(creatorProfiles).where(eq(creatorProfiles.adminId, admin.id)).limit(1);
+        await tx.update(admins).set({ name, introEnabled: body.introEnabled === true }).where(eq(admins.id, admin.id));
+        await tx.update(creatorProfiles).set({ displayName: creatorDisplayName, bio: creatorBio, updatedAt: new Date() }).where(eq(creatorProfiles.adminId, admin.id));
+        if (creator && creator.displayName !== creatorDisplayName) await tx.update(videos).set({ creator: creatorDisplayName, updatedAt: new Date() }).where(eq(videos.creator, creator.displayName));
+      });
       return NextResponse.json({ ok: true });
     }
     await throttle(request, "settings");

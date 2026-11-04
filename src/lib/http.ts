@@ -10,8 +10,10 @@ export function isEmail(value: string) {
 
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || new URL(request.url).host;
   if (origin && new URL(origin).host !== host) throw new HttpError(403, "Cross-site request blocked.");
+  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) throw new HttpError(403, "Cross-site request blocked.");
 }
 
 export async function readBounded(request: Request, limit: number) {

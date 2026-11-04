@@ -1,5 +1,6 @@
 import { mkdir, open, unlink } from "node:fs/promises";
 import path from "node:path";
+import { del as deleteBlob } from "@vercel/blob";
 import { HttpError } from "./http";
 import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from "./admin-shared";
 
@@ -28,17 +29,49 @@ export function validateUpload(filename: string, size: number, kind: string) {
   if (!Number.isSafeInteger(size) || size < 12 || size > max) throw new HttpError(400, kind === "video" ? "Videos must be between 12 bytes and 2 GB." : "Thumbnails must be smaller than 10 MB.");
   return { ext, ...info };
 }
-export async function verifySignature(filename: string, mime: string) {
-  const handle = await open(filename, "r");
-  const bytes = Buffer.alloc(32);
-  try { await handle.read(bytes, 0, 32, 0); } finally { await handle.close(); }
-  const valid = mime === "video/mp4" ? bytes.toString("ascii", 4, 8) === "ftyp"
+function hasValidSignature(bytes: Buffer, mime: string) {
+  return mime === "video/mp4" ? bytes.toString("ascii", 4, 8) === "ftyp"
     : mime === "video/webm" ? bytes.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))
     : mime === "image/jpeg" ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
     : mime === "image/png" ? bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
     : mime === "image/webp" ? bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" : false;
-  if (!valid) throw new HttpError(400, "The file contents do not match its extension. Upload a valid media file.");
 }
+
+export async function verifySignature(filename: string, mime: string) {
+  const handle = await open(filename, "r");
+  const bytes = Buffer.alloc(32);
+  try { await handle.read(bytes, 0, 32, 0); } finally { await handle.close(); }
+  if (!hasValidSignature(bytes, mime)) throw new HttpError(400, "The file contents do not match its extension. Upload a valid media file.");
+}
+
+export async function verifyRemoteSignature(url: string, mime: string) {
+  const response = await fetch(url, { headers: { Range: "bytes=0-31" } });
+  if (!response.ok) throw new HttpError(400, "The uploaded media could not be inspected.");
+  const reader = response.body?.getReader();
+  if (!reader) throw new HttpError(400, "The uploaded media could not be inspected.");
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    while (length < 32) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value.subarray(0, Math.min(value.byteLength, 32 - length));
+      chunks.push(chunk);
+      length += chunk.byteLength;
+      if (length >= 32) await reader.cancel();
+    }
+  } finally { reader.releaseLock(); }
+  if (!hasValidSignature(Buffer.concat(chunks.map(chunk => Buffer.from(chunk)), length), mime)) throw new HttpError(400, "The file contents do not match its extension. Upload a valid media file.");
+}
+
 export async function removeAssetFile(key: string) {
   await unlink(assetPath(key)).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
+}
+
+export async function removeStoredAsset(asset: { storageProvider?: string | null; storageKey: string }) {
+  if (asset.storageProvider === "vercel_blob") {
+    await deleteBlob(asset.storageKey);
+    return;
+  }
+  await removeAssetFile(asset.storageKey);
 }

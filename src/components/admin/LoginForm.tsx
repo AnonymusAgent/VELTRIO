@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ShieldCheck, LockKeyhole, KeyRound, LoaderCircle, CircleAlert, CheckCircle2 } from "lucide-react";
 import { ADMIN_EMAIL } from "@/lib/admin-shared";
 import { BrandLogo } from "@/components/Brand";
 import PasswordField from "./PasswordField";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [recover, setRecover] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +29,8 @@ export default function LoginForm() {
         if (!check.ok || !status.authenticated) throw new Error(embedded
           ? "Sign-in succeeded, but this browser blocked the preview's session cookie. Open the admin page in a new tab to sign in directly."
           : "Sign-in succeeded, but your browser did not keep the session cookie. Allow cookies for this site and try again.");
-        window.location.assign("/admin");
+        router.replace("/admin");
+        router.refresh();
       }
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to connect. Please try again."); }
     finally { setBusy(false); }

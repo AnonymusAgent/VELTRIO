@@ -5,7 +5,7 @@ import { mediaAssets, videos } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { apiError, assertSameOrigin, jsonBody, HttpError } from "@/lib/http";
 import { readyAsset, videoDetails } from "@/lib/video-admin";
-import { removeAssetFile } from "@/lib/storage";
+import { removeStoredAsset } from "@/lib/storage";
 
 type Context = { params: Promise<{ id: string }> };
 async function find(id: string) {
@@ -37,7 +37,7 @@ export async function DELETE(request: Request, { params }: Context) {
       const [other] = await db.select({ id: videos.id }).from(videos).where(and(ne(videos.status, "deleted"), or(eq(videos.mediaAssetId, id), eq(videos.thumbnailAssetId, id)))).limit(1);
       if (other) continue;
       const [asset] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id)).limit(1);
-      if (asset) { await removeAssetFile(asset.storageKey); await db.delete(mediaAssets).where(eq(mediaAssets.id, id)); }
+      if (asset) { await removeStoredAsset(asset); await db.delete(mediaAssets).where(eq(mediaAssets.id, id)); }
     }
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }

@@ -17,10 +17,24 @@ async function serve(request: Request, { params }: { params: Promise<{ id: strin
     if (!asset) throw new HttpError(404, "Media not found.");
     const [published] = await db.select({ id: videos.id }).from(videos).where(and(eq(videos.status, "published"), eq(videos.sourceType, "upload"), or(eq(videos.mediaAssetId, id), eq(videos.thumbnailAssetId, id)))).limit(1);
     if (!published && (await getAdmin())?.id !== asset.adminId) throw new HttpError(404, "Media not found.");
+    const headers = new Headers({ "Content-Type": asset.mimeType, "Accept-Ranges": "bytes", "Cache-Control": published ? "public, max-age=300, must-revalidate" : "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" });
+    if (new URL(request.url).searchParams.get("download") === "1") headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(asset.filename)}`);
+
+    if (asset.storageProvider === "vercel_blob") {
+      const rangeHeader = request.headers.get("range");
+      const remote = await fetch(asset.storageKey, { method: head ? "HEAD" : "GET", headers: !head && rangeHeader ? { Range: rangeHeader } : undefined });
+      if (remote.status === 416) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${asset.size}` } });
+      if (!remote.ok) throw new HttpError(404, "Media not found.");
+      const remoteLength = remote.headers.get("content-length");
+      const remoteRange = remote.headers.get("content-range");
+      if (remoteLength) headers.set("Content-Length", remoteLength);
+      else if (!remoteRange) headers.set("Content-Length", String(asset.size));
+      if (remoteRange) headers.set("Content-Range", remoteRange);
+      return new Response(head ? null : remote.body, { status: remote.status, headers });
+    }
+
     const filename = assetPath(asset.storageKey);
     const { size } = await stat(filename);
-    const headers = new Headers({ "Content-Type": asset.mimeType, "Accept-Ranges": "bytes", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" });
-    if (new URL(request.url).searchParams.get("download") === "1") headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(asset.filename)}`);
     let start = 0, end = size - 1, status = 200;
     const range = request.headers.get("range");
     if (range) {

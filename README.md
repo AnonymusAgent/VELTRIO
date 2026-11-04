@@ -6,7 +6,7 @@ A cinematic, Netflix-inspired video platform with a private admin studio for upl
 
 - **Public site** — homepage hero, trending, categories, search, video watch page, comments, likes, save-to-list, branded loading screen.
 - **Private admin studio** at `/admin` — dashboard, direct uploads with progress, thumbnail handling, library management, publishing controls, and account settings.
-- **Direct uploads** — videos stream to server-side storage and play back with HTTP range requests (seeking works). No Telegram, TeraBox, or third-party imports.
+- **Direct uploads** — videos use the configured local-volume or Vercel Blob provider and play back through the authenticated media proxy with HTTP range requests (seeking works). No Telegram, TeraBox, or third-party imports.
 - **Email + password authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset. No social/OAuth providers.
 - **Monetization ready** — Google AdSense slots (header, sidebar, in-feed, video, footer) with a setup guide at `/adsense-setup` and an auto-generated `/ads.txt`.
 
@@ -37,8 +37,11 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | `NEON_AUTH_BASE_URL` | no | Neon Auth base URL. Stored for configuration; the current admin studio still uses its built-in email/password login. |
 | `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the fixed admin account (`alimukhtar@veltrio.com`). |
 | `ADMIN_RECOVERY_CODE` | recommended | One-time recovery code for password reset. Cleared after use. |
-| `UPLOAD_DIR` | production | Persistent directory for uploaded media (default `.data/uploads`). |
-| `UPLOAD_STORAGE_GB` | no | Storage quota in GB (default `10`). |
+| `STORAGE_PROVIDER` | no | `local` (default) or `vercel_blob`. Blob mode requires `BLOB_READ_WRITE_TOKEN`. |
+| `UPLOAD_DIR` | local mode | Persistent directory for uploaded media (default `.data/uploads`). |
+| `UPLOAD_STORAGE_GB` | no | Storage quota in GB (default `10`). Applies to both providers. |
+| `BLOB_READ_WRITE_TOKEN` | Blob mode | Vercel Blob read-write token. Keep it server-side; never expose it as a public variable. |
+| `UPLOAD_CLEANUP_AGE_HOURS` | no | Age for abandoned local chunk cleanup (default `24`). |
 | `NEXT_PUBLIC_SITE_URL` | production | Canonical site URL, used for metadata and the sitemap. |
 | `NEXT_PUBLIC_ADSENSE_*` | no | AdSense publisher ID and slot IDs. Leave blank to show labeled placeholders. |
 
@@ -62,9 +65,18 @@ For quick local iteration you can still use `npm run db:push` (`drizzle-kit push
 
 ## Uploads and storage
 
-Uploaded media is written to `UPLOAD_DIR` and served through `/api/media/[id]` with `206 Partial Content` range support. **Set `UPLOAD_DIR` to a persistent volume before deploying** — serverless filesystems are ephemeral and uploaded videos will be lost on redeploy. Neon persists the database, not uploaded video files; Vercel deployments need separate durable object/blob storage for media.
+The upload UI selects the configured provider. In the default `local` mode, media is written to `UPLOAD_DIR` and served through `/api/media/[id]` with `206 Partial Content` range support. **Set `UPLOAD_DIR` to a persistent volume before deploying local mode** — serverless filesystems are ephemeral and uploaded videos will be lost on redeploy. The `storage:cleanup` job removes abandoned local upload chunks.
 
-The default quota is 10 GB (`UPLOAD_STORAGE_GB`). File signatures are validated, so a renamed file cannot masquerade as a valid video or image.
+For Vercel or other ephemeral deployments, configure durable object storage instead:
+
+```dotenv
+STORAGE_PROVIDER=vercel_blob
+BLOB_READ_WRITE_TOKEN=your-server-only-vercel-blob-token
+```
+
+Blob uploads use Vercel Blob client uploads, server-issued constrained tokens, server-side file-signature validation, database metadata, quota reservations, and the same `/api/media/[id]` proxy. Published media is cached; draft media remains protected by the admin session check. The Blob URL is never sent to the browser as the application media URL. Apply the `0003` migration before using Blob-backed rows; it adds the provider discriminator and expands the storage-key column for object URLs.
+
+The default quota is 10 GB (`UPLOAD_STORAGE_GB`) and counts both providers. File signatures are validated, so a renamed file cannot masquerade as a valid video or image. If a Blob upload completes but database finalization fails, the finalize endpoint attempts to remove the orphaned object; the cleanup command also removes unclaimed Blob objects older than the configured cleanup age. Schedule `npm run storage:cleanup` from your deployment host.
 
 ## Ads
 
@@ -74,7 +86,7 @@ Add your AdSense publisher ID and ad-unit IDs to the environment. Every placemen
 
 1. Push this repository to GitHub.
 2. Import it into your host (Vercel, Railway, Render, Fly.io, a VPS, etc.) and create a PostgreSQL database.
-3. Set the environment variables above. Point `UPLOAD_DIR` at a persistent volume.
+3. Set the environment variables above. For local mode, point `UPLOAD_DIR` at a persistent volume; for Vercel, set `STORAGE_PROVIDER=vercel_blob` and add the server-only `BLOB_READ_WRITE_TOKEN`.
 4. Apply the schema. On Vercel the build command runs `npm run db:migrate` before `next build`, so the database is migrated automatically on each deploy. On other hosts, run `npm run db:migrate` once against the production database (or wire it into your build/release step).
 5. Sign in at `/admin/login`, change the password, and generate a recovery code.
 
@@ -90,6 +102,7 @@ npm run db:generate # generate a SQL migration from schema changes
 npm run db:migrate  # apply pending migrations (idempotent)
 npm run db:push     # diff schema straight into the database (local iteration)
 npm run db:seed     # insert the default categories
+npm run storage:cleanup # remove abandoned local upload chunks
 ```
 
 On Vercel, set the **Build Command** to `npm run db:migrate && npm run build` so the production database schema is applied automatically on every deploy.

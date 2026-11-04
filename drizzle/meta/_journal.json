@@ -15,6 +15,20 @@
       "when": 1793809816308,
       "tag": "0001_veltrio_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793815491787,
+      "tag": "0002_dashing_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793816463421,
+      "tag": "0003_clean_christian_walker",
+      "breakpoints": true
     }
   ]
 }

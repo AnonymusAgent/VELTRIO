@@ -1,0 +1,2 @@
+ALTER TABLE "media_assets" ALTER COLUMN "storage_key" SET DATA TYPE varchar(2048);--> statement-breakpoint
+ALTER TABLE "media_assets" ADD COLUMN "storage_provider" varchar(30) DEFAULT 'local' NOT NULL;

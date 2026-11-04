@@ -1,4 +1,5 @@
 "use client";
+import { upload as uploadBlob } from "@vercel/blob/client";
 import { CHUNK_SIZE } from "./admin-shared";
 
 function key(file: File, kind: string) { return `vh-upload:${kind}:${file.name}:${file.size}:${file.lastModified}`; }
@@ -7,6 +8,44 @@ async function responseData(response: Response) {
   if (!response.ok) throw new Error(body.error || `Upload failed (${response.status}). Please retry.`);
   return body;
 }
+
+export async function getStorageProvider(signal?: AbortSignal): Promise<"local" | "vercel_blob"> {
+  const data = await responseData(await fetch("/api/admin/storage-provider", { signal }));
+  return data.provider === "vercel_blob" ? "vercel_blob" : "local";
+}
+
+export async function uploadBlobFile(file: File, kind: "video" | "thumbnail", onProgress: (received: number) => void, signal?: AbortSignal) {
+  let existingId: string | null = null;
+  try { existingId = sessionStorage.getItem(key(file, kind)); } catch {}
+  if (existingId) {
+    const existing = await fetch(`/api/admin/uploads/${existingId}`, { signal });
+    if (existing.ok) {
+      const info = await responseData(existing);
+      if (info.status === "ready") { onProgress(file.size); return existingId; }
+    }
+    forgetUpload(file, kind);
+  }
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "") || `${kind}.bin`;
+  const contentType = file.type || (kind === "video" ? (/\.webm$/i.test(file.name) ? "video/webm" : "video/mp4") : (/\.png$/i.test(file.name) ? "image/png" : /\.webp$/i.test(file.name) ? "image/webp" : "image/jpeg"));
+  const blob = await uploadBlob(`veltrio/${kind}/${safeName}`, file, {
+    access: "public",
+    handleUploadUrl: "/api/admin/blob-upload",
+    clientPayload: JSON.stringify({ filename: file.name, size: file.size, kind }),
+    contentType,
+    multipart: kind === "video" && file.size > 8 * 1024 * 1024,
+    abortSignal: signal,
+    onUploadProgress: progress => onProgress(progress.loaded),
+  });
+  const info = await responseData(await fetch("/api/admin/blob-assets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: blob.url, filename: file.name, kind }),
+  }));
+  try { sessionStorage.setItem(key(file, kind), info.id); } catch {}
+  onProgress(file.size);
+  return info.id as string;
+}
+
 export function forgetUpload(file: File, kind: string) {
   try { sessionStorage.removeItem(key(file, kind)); } catch {}
 }

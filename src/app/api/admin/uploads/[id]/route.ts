@@ -6,7 +6,7 @@ import { mediaAssets, videos } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { CHUNK_SIZE } from "@/lib/admin-shared";
 import { assertSameOrigin, readBounded, HttpError, apiError } from "@/lib/http";
-import { assetPath, verifySignature, removeAssetFile } from "@/lib/storage";
+import { assetPath, verifySignature, removeAssetFile, removeStoredAsset } from "@/lib/storage";
 
 type Context = { params: Promise<{ id: string }> };
 export const runtime = "nodejs";
@@ -85,8 +85,8 @@ export async function DELETE(request: Request, { params }: Context) {
     if (!asset) return NextResponse.json({ ok: true });
     const [used] = await db.select({ id: videos.id }).from(videos).where(and(ne(videos.status, "deleted"), or(eq(videos.mediaAssetId, id), eq(videos.thumbnailAssetId, id)))).limit(1);
     if (used) throw new HttpError(409, "This file is attached to a video. Delete the video first.");
-    await removeAssetFile(`${id}.part`);
-    await removeAssetFile(asset.storageKey);
+    await removeAssetFile(`${id}.part`).catch(() => {});
+    await removeStoredAsset(asset);
     await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }
