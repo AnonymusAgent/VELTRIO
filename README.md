@@ -53,6 +53,8 @@ npx drizzle-kit push
 
 If a push prompts interactively in a non-TTY environment, run `npx drizzle-kit push --force`.
 
+> `drizzle.config.json` ships with the local development connection string. Update its `dbCredentials.url` to your production database before running migrations against a hosted database, or run `drizzle-kit` with your own config.
+
 ## Uploads and storage
 
 Uploaded media is written to `UPLOAD_DIR` and served through `/api/media/[id]` with `206 Partial Content` range support. **Set `UPLOAD_DIR` to a persistent volume before deploying** — serverless filesystems are ephemeral and uploaded videos will be lost on redeploy.
