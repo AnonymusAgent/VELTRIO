@@ -1,0 +1,96 @@
+import 'dotenv/config';
+import assert from 'node:assert/strict';
+import { chromium } from '@playwright/test';
+
+const base = process.env.TEST_BASE_URL || 'http://localhost:3000';
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const page = await context.newPage();
+const errors = [];
+page.on('pageerror', error => errors.push(error.message));
+let createdId;
+try {
+  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1900);
+  assert.match(await page.title(), /Video Hub/);
+  await page.screenshot({ path: '/tmp/video-hub-home.png', fullPage: true });
+  await page.goto(`${base}/admin/login`, { waitUntil: 'networkidle' });
+  await page.screenshot({ path: '/tmp/video-hub-login.png', fullPage: true });
+  await page.locator('input[name="password"]').fill(process.env.ADMIN_INITIAL_PASSWORD);
+  await page.getByRole('button', { name: 'Sign in to your studio', exact: true }).click();
+  await page.waitForURL('**/admin');
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({ path: '/tmp/video-hub-admin.png', fullPage: true });
+  await page.goto(`${base}/admin/upload`, { waitUntil: 'networkidle' });
+  await page.screenshot({ path: '/tmp/video-hub-upload.png', fullPage: true });
+
+  const bytes = await page.evaluate(async () => {
+    const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+    const stream = canvas.captureStream(12);
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+    const chunks = [];
+    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    const finished = new Promise(resolve => { recorder.onstop = async () => resolve(Array.from(new Uint8Array(await new Blob(chunks, { type: 'video/webm' }).arrayBuffer()))); });
+    let frame = 0;
+    function draw() { ctx.fillStyle = '#17141a'; ctx.fillRect(0,0,640,360); ctx.fillStyle = '#ff6552'; ctx.fillRect(50 + frame * 3,140,80,80); ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('Video Hub · upload test', 65,85); frame++; }
+    draw(); recorder.start(100);
+    const timer = setInterval(draw, 80);
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    recorder.stop(); clearInterval(timer); stream.getTracks().forEach(track => track.stop());
+    return finished;
+  });
+  await page.locator('input[aria-label="Choose video file"]').setInputFiles({ name: 'video-hub-browser-test.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) });
+  await page.locator('#video-title').fill('Browser test — Video Hub original');
+  await page.getByRole('button', { name: 'Upload & save draft', exact: true }).waitFor({ state: 'visible', timeout: 25000 });
+  await page.getByRole('button', { name: 'Upload & save draft', exact: true }).click();
+  await page.getByRole('heading', { name: 'Your story is taking shape.' }).waitFor({ timeout: 45000 });
+  const catalog = await (await context.request.get(`${base}/api/admin/videos`)).json();
+  const item = catalog.videos.find(video => video.title === 'Browser test — Video Hub original');
+  assert.ok(item); createdId = item.id;
+  assert.equal(item.status, 'draft');
+  assert.ok(item.thumbnail.startsWith('/api/media/'), 'Automatic thumbnail should have been created');
+  await page.getByRole('link', { name: 'Go to video library', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Browser test — Video Hub original', exact: true }).click();
+  await page.locator('#edit-status').selectOption('published');
+  await page.locator('dialog input[name="rightsConfirmed"]').check();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  const anonymous = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const watch = await anonymous.newPage();
+  await watch.goto(`${base}/video/${item.slug}`, { waitUntil: 'networkidle' });
+  await watch.waitForTimeout(1800);
+  await watch.locator('video').evaluate(async video => { video.muted = true; await video.play(); });
+  await watch.waitForFunction(() => document.querySelector('video').currentTime > 0.1);
+  await watch.locator('video').evaluate(video => video.pause());
+  await watch.screenshot({ path: '/tmp/video-hub-playback.png', fullPage: true });
+  await anonymous.close();
+  console.log('PASS: browser login, direct WebM upload, automatic thumbnail, draft creation, edit/publish, anonymous native playback.');
+  await page.goto(`${base}/admin/settings`, { waitUntil: 'networkidle' });
+  await page.screenshot({ path: '/tmp/video-hub-settings.png', fullPage: true });
+  await page.getByRole('button', { name: 'Replay brand intro' }).click();
+  await page.waitForTimeout(650);
+  assert.equal(await page.locator('.intro-overlay').count(), 1);
+  await page.screenshot({ path: '/tmp/video-hub-intro.png' });
+  await page.waitForTimeout(1600);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${base}/admin/upload`, { waitUntil: 'networkidle' });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Mobile admin overflow');
+  await page.screenshot({ path: '/tmp/video-hub-mobile-upload.png', fullPage: true });
+  await page.getByRole('button', { name: 'Open sidebar' }).click();
+  await page.getByRole('navigation', { name: 'Admin navigation' }).getByRole('link', { name: 'Settings' }).click();
+  await page.waitForURL('**/admin/settings');
+  await page.goto(base, { waitUntil: 'networkidle' });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Mobile homepage overflow');
+  await page.screenshot({ path: '/tmp/video-hub-mobile-home.png', fullPage: true });
+  assert.deepEqual(errors, [], 'Browser must not emit runtime errors');
+  console.log('PASS: branding replay, mobile upload layout, mobile sidebar, mobile public page, no browser runtime errors.');
+} catch (error) {
+  await page.screenshot({ path: '/tmp/video-hub-browser-error.png', fullPage: true }).catch(() => {});
+  console.error(error);
+  process.exitCode = 1;
+} finally {
+  if (createdId) await context.request.delete(`${base}/api/admin/videos/${createdId}`).catch(() => {});
+  await context.request.post(`${base}/api/admin/auth/logout`).catch(() => {});
+  await browser.close();
+}
