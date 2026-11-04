@@ -7,6 +7,6 @@ import { AdSenseScript } from "./AdSense";
 
 export default function AppChrome({ children }: { children: ReactNode }) {
   const path = usePathname();
-  if (path.startsWith("/admin") || path.startsWith("/studio")) return <>{children}</>;
+  if (path.startsWith("/admin")) return <>{children}</>;
   return <><AdSenseScript /><a className="skip-link" href="#main-content">Skip to content</a><Header /><main id="main-content" tabIndex={-1}>{children}</main><Footer /></>;
 }
