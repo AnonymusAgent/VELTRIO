@@ -45,7 +45,7 @@ async function makeAsset(filename: string, kind: string, bytes: Uint8Array) {
   return id as string;
 }
 async function main() {
-  console.log("Testing Video Hub direct-upload architecture…");
+  console.log("Testing VELTRIO direct-upload architecture…");
   assert.equal((await request("/api/admin/videos", "GET", undefined, false)).status, 401);
   assert.equal((await request("/api/admin/uploads", "POST", {}, false)).status, 401);
   assert.equal((await request("/api/submit", "POST", {}, false)).status, 410);

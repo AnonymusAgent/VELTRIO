@@ -12,7 +12,7 @@ let createdId;
 try {
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1900);
-  assert.match(await page.title(), /Video Hub/);
+  assert.match(await page.title(), /VELTRIO/);
   await page.screenshot({ path: '/tmp/video-hub-home.png', fullPage: true });
   await page.goto(`${base}/admin/login`, { waitUntil: 'networkidle' });
   await page.screenshot({ path: '/tmp/video-hub-login.png', fullPage: true });
@@ -33,7 +33,7 @@ try {
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     const finished = new Promise(resolve => { recorder.onstop = async () => resolve(Array.from(new Uint8Array(await new Blob(chunks, { type: 'video/webm' }).arrayBuffer()))); });
     let frame = 0;
-    function draw() { ctx.fillStyle = '#17141a'; ctx.fillRect(0,0,640,360); ctx.fillStyle = '#ff6552'; ctx.fillRect(50 + frame * 3,140,80,80); ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('Video Hub · upload test', 65,85); frame++; }
+    function draw() { ctx.fillStyle = '#17141a'; ctx.fillRect(0,0,640,360); ctx.fillStyle = '#ff6552'; ctx.fillRect(50 + frame * 3,140,80,80); ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('VELTRIO · upload test', 65,85); frame++; }
     draw(); recorder.start(100);
     const timer = setInterval(draw, 80);
     await new Promise(resolve => setTimeout(resolve, 1600));
@@ -41,17 +41,17 @@ try {
     return finished;
   });
   await page.locator('input[aria-label="Choose video file"]').setInputFiles({ name: 'video-hub-browser-test.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) });
-  await page.locator('#video-title').fill('Browser test — Video Hub original');
+  await page.locator('#video-title').fill('Browser test — VELTRIO original');
   await page.getByRole('button', { name: 'Upload & save draft', exact: true }).waitFor({ state: 'visible', timeout: 25000 });
   await page.getByRole('button', { name: 'Upload & save draft', exact: true }).click();
   await page.getByRole('heading', { name: 'Your story is taking shape.' }).waitFor({ timeout: 45000 });
   const catalog = await (await context.request.get(`${base}/api/admin/videos`)).json();
-  const item = catalog.videos.find(video => video.title === 'Browser test — Video Hub original');
+  const item = catalog.videos.find(video => video.title === 'Browser test — VELTRIO original');
   assert.ok(item); createdId = item.id;
   assert.equal(item.status, 'draft');
   assert.ok(item.thumbnail.startsWith('/api/media/'), 'Automatic thumbnail should have been created');
   await page.getByRole('link', { name: 'Go to video library', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit Browser test — Video Hub original', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Browser test — VELTRIO original', exact: true }).click();
   await page.locator('#edit-status').selectOption('published');
   await page.locator('dialog input[name="rightsConfirmed"]').check();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();

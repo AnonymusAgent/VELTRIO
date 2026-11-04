@@ -12,10 +12,11 @@ import "@fontsource/outfit/800.css";
 import "./globals.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: { default: "Video Hub — Every story starts with play", template: "%s | Video Hub" },
-  description: "A home for original stories worth watching. Explore films, travel, music and more, uploaded and published directly on Video Hub.",
+  title: { default: `${BRAND_NAME} — ${BRAND_TAGLINE}`, template: `%s | ${BRAND_NAME}` },
+  description: `A home for original stories worth watching. Explore films, travel, music and more, uploaded and published directly on ${BRAND_NAME}.`,
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {

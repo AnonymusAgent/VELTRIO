@@ -22,7 +22,7 @@ export const videos = pgTable("videos", {
   likes: integer("likes").default(0),
   categorySlug: varchar("category_slug", { length: 120 }),
   categoryName: varchar("category_name", { length: 120 }),
-  creator: varchar("creator", { length: 160 }).default("Video Hub"),
+  creator: varchar("creator", { length: 160 }).default("VELTRIO"),
   creatorAvatar: text("creator_avatar"),
   isTrending: boolean("is_trending").default(false),
   isFeatured: boolean("is_featured").default(false),

@@ -1,4 +1,4 @@
-# Video Hub
+# VELTRIO
 
 A cinematic, Netflix-inspired video platform with a private admin studio for uploading and publishing original videos. Built with Next.js (App Router), PostgreSQL, and Drizzle ORM.
 
@@ -26,7 +26,7 @@ npm run dev
 
 Open http://localhost:3000 and sign in at http://localhost:3000/admin/login.
 
-There is one fixed admin account, `alomukhtar@playhub.vom` (hardcoded in `src/lib/admin-shared.ts`). It is provisioned automatically on first login using `ADMIN_INITIAL_PASSWORD`. Change the password from **Admin → Settings** after signing in, and generate a recovery code there as well.
+There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/lib/admin-shared.ts`). It is provisioned automatically on first login using `ADMIN_INITIAL_PASSWORD`. Change the password from **Admin → Settings** after signing in, and generate a recovery code there as well. Existing accounts from the former brand email are migrated automatically.
 
 ## Environment variables
 
@@ -35,7 +35,7 @@ There is one fixed admin account, `alomukhtar@playhub.vom` (hardcoded in `src/li
 | `DATABASE_URL` | yes | Direct PostgreSQL connection string. Used by Drizzle schema commands. |
 | `DATABASE_URL_POOLED` | recommended | Pooled runtime connection string. Used by the app when present; recommended for Neon on Vercel. |
 | `NEON_AUTH_BASE_URL` | no | Neon Auth base URL. Stored for configuration; the current admin studio still uses its built-in email/password login. |
-| `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the fixed admin account (`alomukhtar@playhub.vom`). |
+| `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the fixed admin account (`alimukhtar@veltrio.com`). |
 | `ADMIN_RECOVERY_CODE` | recommended | One-time recovery code for password reset. Cleared after use. |
 | `UPLOAD_DIR` | production | Persistent directory for uploaded media (default `.data/uploads`). |
 | `UPLOAD_STORAGE_GB` | no | Storage quota in GB (default `10`). |
