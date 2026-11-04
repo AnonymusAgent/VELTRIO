@@ -45,10 +45,10 @@ export function compareSnapshot(snapshot: Snapshot, columns: ActualColumn[], ind
 }
 
 export async function auditSnapshot(pool: Pool | PoolClient, snapshot: Snapshot) {
-  const [columns, indexes, constraints] = await Promise.all([
-    pool.query<ActualColumn>("select table_name, column_name, data_type, character_maximum_length, is_nullable, column_default from information_schema.columns where table_schema = 'public'"),
-    pool.query<ActualIndex>("select tablename, indexname from pg_indexes where schemaname = 'public'"),
-    pool.query<ActualConstraint>("select table_name, constraint_name from information_schema.table_constraints where table_schema = 'public'"),
-  ]);
+  // A migration holds one connection and one session lock. Serial queries also
+  // remain compatible with pg 9, which disallows concurrent client.query calls.
+  const columns = await pool.query<ActualColumn>("select table_name, column_name, data_type, character_maximum_length, is_nullable, column_default from information_schema.columns where table_schema = 'public'");
+  const indexes = await pool.query<ActualIndex>("select tablename, indexname from pg_indexes where schemaname = 'public'");
+  const constraints = await pool.query<ActualConstraint>("select table_name, constraint_name from information_schema.table_constraints where table_schema = 'public'");
   return compareSnapshot(snapshot, columns.rows, indexes.rows, constraints.rows);
 }
