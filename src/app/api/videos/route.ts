@@ -9,7 +9,8 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const query = (params.get("q") || "").slice(0, 160);
     const category = (params.get("category") || "all").slice(0, 120);
-    const sort = params.get("sort") === "popular" ? "popular" : "newest";
+    const sortParam = params.get("sort");
+    const sort = sortParam === "popular" ? "popular" : sortParam === "duration" ? "duration" : "newest";
     const rawLimit = Number(params.get("limit") || 24);
     const rawOffset = Number(params.get("offset") || 0);
     if (!Number.isSafeInteger(rawLimit) || !Number.isSafeInteger(rawOffset) || rawLimit < 1 || rawOffset < 0) throw new HttpError(400, "Invalid catalog pagination.");
