@@ -1,5 +1,5 @@
 #!/bin/bash
-# Video Hub — push to your GitHub repo
+# VELTRIO — push to your GitHub repo
 # Usage:
 #   chmod +x scripts/push-to-github.sh
 #   ./scripts/push-to-github.sh git@github.com:YOUR_USERNAME/video-hub.git
@@ -24,4 +24,4 @@ fi
 git branch -M main
 echo "Pushing to $REMOTE_URL ..."
 git push -u origin main
-echo "Done! Your Video Hub code is on GitHub."
+echo "Done! Your VELTRIO code is on GitHub."

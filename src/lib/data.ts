@@ -5,12 +5,12 @@ export type Video = {
 };
 
 export const CATEGORIES = [
-  { name: "Short films", slug: "short-films", description: "Small running times. Big ideas.", thumbnail: "/images/video-hub-landscape.jpg" },
-  { name: "Travel & adventure", slug: "travel-adventure", description: "A new perspective, somewhere new.", thumbnail: "/images/video-hub-landscape.jpg" },
-  { name: "Music & live", slug: "music-live", description: "Turn it up. Feel every moment.", thumbnail: "/images/video-hub-landscape.jpg" },
-  { name: "Life & culture", slug: "life-culture", description: "Extraordinary stories from everyday life.", thumbnail: "/images/video-hub-landscape.jpg" },
-  { name: "Creative & design", slug: "creative-design", description: "A little inspiration goes a long way.", thumbnail: "/images/video-hub-landscape.jpg" },
-  { name: "Learning", slug: "learning", description: "Follow your curiosity.", thumbnail: "/images/video-hub-landscape.jpg" },
+  { name: "Short films", slug: "short-films", description: "Small running times. Big ideas.", thumbnail: "/images/veltrio-landscape.jpg" },
+  { name: "Travel & adventure", slug: "travel-adventure", description: "A new perspective, somewhere new.", thumbnail: "/images/veltrio-landscape.jpg" },
+  { name: "Music & live", slug: "music-live", description: "Turn it up. Feel every moment.", thumbnail: "/images/veltrio-landscape.jpg" },
+  { name: "Life & culture", slug: "life-culture", description: "Extraordinary stories from everyday life.", thumbnail: "/images/veltrio-landscape.jpg" },
+  { name: "Creative & design", slug: "creative-design", description: "A little inspiration goes a long way.", thumbnail: "/images/veltrio-landscape.jpg" },
+  { name: "Learning", slug: "learning", description: "Follow your curiosity.", thumbnail: "/images/veltrio-landscape.jpg" },
 ];
 // The library is populated exclusively by direct admin uploads. No external/demo videos.
 export function formatViews(n: number) {

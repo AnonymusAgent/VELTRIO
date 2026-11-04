@@ -10,18 +10,18 @@ if (!databaseUrl) {
 }
 
 const globalForDb = globalThis as typeof globalThis & {
-  __videoHubPool?: Pool;
+  __veltrioPool?: Pool;
 };
 
 export const pool =
-  globalForDb.__videoHubPool ??
+  globalForDb.__veltrioPool ??
   new Pool({
     connectionString: databaseUrl,
     max: process.env.VERCEL ? 5 : 10,
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.__videoHubPool = pool;
+  globalForDb.__veltrioPool = pool;
 }
 
 export const db = drizzle(pool);

@@ -5,7 +5,7 @@ import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { admins, adminSessions, authAttempts } from "@/db/schema";
-import { ADMIN_EMAIL } from "./admin-shared";
+import { ADMIN_EMAIL, LEGACY_ADMIN_EMAIL } from "./admin-shared";
 import { HttpError } from "./http";
 
 export const ADMIN_COOKIE = "vh_admin_session";
@@ -45,14 +45,25 @@ export function validatePassword(value: unknown) {
 }
 
 export async function ensureAdmin() {
-  const [existing] = await db.select().from(admins).where(eq(admins.email, ADMIN_EMAIL)).limit(1);
-  if (existing) return existing;
-  const initial = process.env.ADMIN_INITIAL_PASSWORD;
-  if (!initial || initial.length < 12) throw new HttpError(503, "Admin provisioning is incomplete. Set ADMIN_INITIAL_PASSWORD on the server.");
-  const recovery = process.env.ADMIN_RECOVERY_CODE;
-  await db.insert(admins).values({ email: ADMIN_EMAIL, passwordHash: await hashPassword(initial), recoveryHash: recovery ? await hashPassword(recovery) : null }).onConflictDoNothing();
-  const [admin] = await db.select().from(admins).where(eq(admins.email, ADMIN_EMAIL)).limit(1);
-  return admin;
+  return db.transaction(async tx => {
+    const [existing] = await tx.select().from(admins).where(eq(admins.email, ADMIN_EMAIL)).limit(1);
+    if (existing) return existing;
+
+    // Preserve an already-provisioned account when the brand email changes.
+    // This keeps its password, recovery code, and active ownership intact.
+    const [legacy] = await tx.select().from(admins).where(eq(admins.email, LEGACY_ADMIN_EMAIL)).limit(1);
+    if (legacy) {
+      const [renamed] = await tx.update(admins).set({ email: ADMIN_EMAIL }).where(and(eq(admins.id, legacy.id), eq(admins.email, LEGACY_ADMIN_EMAIL))).returning();
+      if (renamed) return renamed;
+    }
+
+    const initial = process.env.ADMIN_INITIAL_PASSWORD;
+    if (!initial || initial.length < 12) throw new HttpError(503, "Admin provisioning is incomplete. Set ADMIN_INITIAL_PASSWORD on the server.");
+    const recovery = process.env.ADMIN_RECOVERY_CODE;
+    await tx.insert(admins).values({ email: ADMIN_EMAIL, passwordHash: await hashPassword(initial), recoveryHash: recovery ? await hashPassword(recovery) : null }).onConflictDoNothing();
+    const [admin] = await tx.select().from(admins).where(eq(admins.email, ADMIN_EMAIL)).limit(1);
+    return admin;
+  });
 }
 
 // Cached per request: the workspace layout and each page both resolve the

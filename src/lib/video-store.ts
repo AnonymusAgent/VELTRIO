@@ -4,7 +4,7 @@ import { comments, mediaAssets, videos } from "@/db/schema";
 import type { Video } from "./data";
 import type { AdminVideo } from "./admin-shared";
 
-export const DEFAULT_THUMBNAIL = "/images/video-hub-landscape.jpg";
+export const DEFAULT_THUMBNAIL = "/images/veltrio-landscape.jpg";
 
 // The single source of truth for "visible on the public site": published
 // direct uploads only. Optionally narrowed to one slug.

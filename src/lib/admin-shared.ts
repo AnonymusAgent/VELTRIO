@@ -1,4 +1,5 @@
-export const ADMIN_EMAIL = "alomukhtar@playhub.vom";
+export const ADMIN_EMAIL = "alimukhtar@veltrio.com";
+export const LEGACY_ADMIN_EMAIL = "alomukhtar@playhub.vom";
 export const CHUNK_SIZE = 4 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;

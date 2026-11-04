@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       ...details, slug: `${stem}-${randomBytes(4).toString("hex")}`, sourceType: "upload", mediaAssetId: media.id,
       thumbnailAssetId: thumbnail?.id || null, thumbnail: thumbnail ? `/api/media/${thumbnail.id}` : DEFAULT_THUMBNAIL,
       videoUrl: `/api/media/${media.id}`, fileSize: media.size, mimeType: media.mimeType, durationSeconds: Math.floor(seconds), duration: formatDuration(seconds),
-      creator: "Video Hub", creatorAvatar: "/icon.svg", tags: [], isHd: true, publishedAt: details.status === "published" ? new Date() : null, updatedAt: new Date(),
+      creator: "VELTRIO", creatorAvatar: "/icon.svg", tags: [], isHd: true, publishedAt: details.status === "published" ? new Date() : null, updatedAt: new Date(),
     }).returning({ id: videos.id, slug: videos.slug });
     return NextResponse.json({ ok: true, ...video }, { status: 201 });
   } catch (error) { return apiError(error); }

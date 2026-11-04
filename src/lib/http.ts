@@ -43,6 +43,6 @@ export async function jsonBody(request: Request): Promise<Record<string, unknown
 
 export function apiError(error: unknown) {
   if (error instanceof HttpError) return NextResponse.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
-  console.error("Video Hub request failed:", error instanceof Error ? error.message : "Unknown error");
+  console.error("VELTRIO request failed:", error instanceof Error ? error.message : "Unknown error");
   return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
 }
