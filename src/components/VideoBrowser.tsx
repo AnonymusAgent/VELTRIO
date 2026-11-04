@@ -88,6 +88,6 @@ export default function VideoBrowser({ videos, initialCategory = "all", initialQ
     {list.length ? <>
       <div className="video-grid">{list.map(video => <VideoCard video={video} key={video.id} />)}</div>
       {!savedOnly && items.length < total && <div className="mt-10 flex justify-center"><button type="button" onClick={loadMore} disabled={loadingMore} className="vh-button secondary small">{loadingMore && <LoaderCircle size={13} className="animate-spin" />}{loadingMore ? "Loading stories…" : "Load more stories"}<ArrowRight size={13} /></button></div>}
-    </> : <div className="vh-panel empty-state !py-20"><div className="empty-icon"><Film size={26} /></div><h3>{emptyTitle}</h3><p>{emptyDescription}</p><Link className="vh-button secondary small" href={savedOnly ? "/browse" : "/admin/upload"}>{savedOnly ? "Explore videos" : "Open creator studio"}<ArrowRight size={13} /></Link></div>}
+    </> : <div className="vh-panel empty-state !py-20"><div className="empty-icon"><Film size={26} /></div><h3>{emptyTitle}</h3><p>{emptyDescription}</p><Link className="vh-button secondary small" href={savedOnly ? "/browse" : "/studio"}>{savedOnly ? "Explore videos" : "Open creator studio"}<ArrowRight size={13} /></Link></div>}
   </>;
 }
