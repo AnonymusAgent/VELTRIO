@@ -36,6 +36,13 @@
       "when": 1793820467805,
       "tag": "0004_dapper_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793834290540,
+      "tag": "0005_orange_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

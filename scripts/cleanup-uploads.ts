@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { del as deleteBlob, list } from "@vercel/blob";
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { db, pool } from "../src/db";
 import { mediaAssets } from "../src/db/schema";
 import { removeAssetFile, removeStoredAsset } from "../src/lib/storage";
@@ -19,8 +19,20 @@ async function removeOrphanedBlobs() {
     orphaned.push(...page.blobs.filter(blob => blob.uploadedAt < cutoff && !known.has(blob.url)).map(blob => blob.url));
     cursor = page.hasMore ? page.cursor : undefined;
   } while (cursor);
-  for (const url of orphaned) await deleteBlob(url);
-  return orphaned.length;
+  let removed = 0;
+  for (const url of orphaned) {
+    // Finalization uses the same lock. Recheck references after listing so a
+    // newly finalized object is never removed from a stale snapshot.
+    const deleted = await db.transaction(async tx => {
+      await tx.execute(sql`select pg_advisory_xact_lock(6577201)`);
+      const [referenced] = await tx.select({ id: mediaAssets.id }).from(mediaAssets).where(eq(mediaAssets.storageKey, url)).limit(1);
+      if (referenced) return false;
+      await deleteBlob(url);
+      return true;
+    });
+    if (deleted) removed++;
+  }
+  return removed;
 }
 
 async function main() {

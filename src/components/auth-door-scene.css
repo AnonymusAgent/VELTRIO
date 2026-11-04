@@ -4,10 +4,10 @@
 .auth-door-floor{left:3px;bottom:1px;width:93px;height:15px;border-radius:50%;background:radial-gradient(ellipse,#0b0a1c80,transparent 70%);transform:rotateX(58deg)}
 .auth-door-frame{left:59px;top:2px;width:31px;height:48px;border:3px solid #a699c6;border-bottom:2px solid #746895;border-radius:3px 3px 1px 1px;background:#171426;box-shadow:inset 3px 0 4px #05040a,3px 3px 4px #08071370;transform:rotateY(-8deg);transform-style:preserve-3d}
 .auth-door-room{inset:0;background:linear-gradient(115deg,#161329,#302949 58%,#1b182c);box-shadow:inset 0 0 8px #06040d}
-.auth-door-panel{inset:0;transform-origin:left center;transform-style:preserve-3d;border:1px solid #51476e;border-radius:1px;background:linear-gradient(105deg,#8b80ab 0%,#6c608b 18%,#544968 100%);box-shadow:inset -2px 0 2px #302741,1px 1px 3px #090713a0;animation:auth-door-swing 3.2s both}
+.auth-door-panel{inset:0;transform-origin:left center;transform-style:preserve-3d;border:1px solid #51476e;border-radius:1px;background:linear-gradient(105deg,#8b80ab 0%,#6c608b 18%,#544968 100%);box-shadow:inset -2px 0 2px #302741,1px 1px 3px #090713a0;animation:auth-door-swing 3.2s cubic-bezier(.4,0,.2,1) both}
 .auth-door-inset{inset:4px 4px 5px;border:1px solid #baaed34d;box-shadow:inset 1px 1px 3px #342a49,1px 1px #b5a4cb44}
 .auth-door-handle{right:3px;top:21px;width:5px;height:3px;border-radius:2px;background:linear-gradient(#fff1ba,#d7ad5c);box-shadow:0 1px 2px #201420}
-.auth-door-person{left:6px;bottom:5px;width:20px;height:39px;transform-style:preserve-3d;animation:auth-door-travel 3.2s both}
+.auth-door-person{left:6px;bottom:5px;width:20px;height:39px;transform-style:preserve-3d;animation:auth-door-travel 3.2s cubic-bezier(.4,0,.2,1) both}
 .auth-door-person-shadow{left:0;bottom:-2px;width:23px;height:5px;border-radius:50%;background:#08061377;filter:blur(2px)}
 .auth-door-head{left:5px;top:0;width:12px;height:13px;border-radius:48% 48% 45% 45%;background:radial-gradient(circle at 70% 35%,#ffdfbd,#d99372 72%);box-shadow:inset -2px -1px 2px #9c655e70,1px 2px 3px #20152355;transform:translateZ(3px)}
 .auth-door-hair{left:0;top:-1px;width:12px;height:6px;border-radius:8px 7px 2px 3px;background:linear-gradient(140deg,#493b50,#241c30);box-shadow:inset 1px 1px 1px #a38b96}
@@ -15,7 +15,7 @@
 .auth-door-body{left:5px;top:12px;width:12px;height:15px;border-radius:5px 5px 3px 3px;background:linear-gradient(100deg,#a095ef,#7062c5 55%,#4b3d87);box-shadow:inset 1px 1px 2px #d1c9ff70,2px 1px 2px #19112f55;transform:translateZ(2px)}
 .auth-door-arm{top:13px;width:4px;height:14px;border-radius:5px;background:linear-gradient(#897bda 0 67%,#e2aa8a 70%);transform-origin:50% 2px}
 .auth-door-arm--back{left:5px;animation:auth-door-arm-back .48s ease-in-out 6 alternate both}
-.auth-door-arm--front{left:14px;z-index:2;animation:auth-door-arm-front 3.2s both}
+.auth-door-arm--front{left:14px;z-index:2;animation:auth-door-arm-front 3.2s ease-in-out both}
 .auth-door-leg{top:24px;width:5px;height:13px;border-radius:2px 2px 3px 3px;background:linear-gradient(90deg,#242a43,#41455f);transform-origin:50% 1px}
 .auth-door-leg:after{content:"";position:absolute;bottom:-1px;left:0;width:7px;height:3px;border-radius:2px;background:#161725}
 .auth-door-leg--back{left:6px;animation:auth-door-step-back .48s ease-in-out 6 alternate both}
@@ -28,8 +28,12 @@
 @keyframes auth-door-arm-back{from{transform:rotate(25deg)}to{transform:rotate(-25deg)}}
 @keyframes auth-door-step{from{transform:rotate(-28deg)}to{transform:rotate(28deg)}}
 @keyframes auth-door-step-back{from{transform:rotate(28deg)}to{transform:rotate(-28deg)}}
-.auth-door-active{display:inline-flex!important;align-items:center!important;justify-content:center;gap:7px;min-height:58px;opacity:1!important;cursor:wait!important}
-.profile-dropdown .auth-door-active{justify-content:flex-start;text-align:left}
+/* The original label remains in flow, keeping both dimensions unchanged. */
+.auth-door-button{position:relative;overflow:hidden}
+.auth-door-button .auth-door-scene{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.62);pointer-events:none;animation:auth-scene-appear .22s ease-out both}
+.auth-door-active{opacity:1!important;cursor:wait!important}
 .auth-door-active:hover{transform:none!important}
-@media(prefers-reduced-motion:reduce){.auth-door-scene{display:none}.auth-door-active{min-height:44px}}
+@media(prefers-reduced-motion:no-preference){.auth-door-active .auth-door-label{visibility:hidden}}
+@keyframes auth-scene-appear{from{opacity:0;transform:translate(-50%,-45%) scale(.58)}to{opacity:1;transform:translate(-50%,-50%) scale(.62)}}
+@media(prefers-reduced-motion:reduce){.auth-door-scene{display:none}}
 .profile-dropdown--busy a{pointer-events:none;opacity:.55}
