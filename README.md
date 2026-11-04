@@ -11,7 +11,7 @@ A cinematic, Netflix-inspired video platform with a private admin studio for upl
 - **Creator studio** — `/studio` lists each signed-in creator’s own videos and views, with local filesystem uploads, thumbnails, metadata editing, publishing and deletion. Earnings are marked unavailable until a real monetization and payout system is implemented.
 - **First-party analytics** — opt-in public page views and playback events in the admin overview. The last 30 days of page views exclude query strings and IP addresses; counts are estimates and exclude people who decline analytics. Playback totals are all-time and may include events recorded by older versions before consent was introduced; older watch-time measurements are not directly comparable to the new incremental measurements.
 - **Admin authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset.
-- **Monetization ready** — Google AdSense slots (header, sidebar, in-feed, video, footer) with a setup guide at `/adsense-setup` and an auto-generated `/ads.txt`.
+- **Optional first-party pre-roll** — a configured sponsor video can play before a video, with a skip control and a fallback if the clip fails. No display ad slots or ad-network SDK are loaded.
 
 ## Requirements
 
@@ -47,7 +47,8 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | `BLOB_READ_WRITE_TOKEN` | Blob mode | Vercel Blob read-write token. Keep it server-side; never expose it as a public variable. |
 | `UPLOAD_CLEANUP_AGE_HOURS` | no | Age for abandoned local chunk cleanup (default `24`). |
 | `NEXT_PUBLIC_SITE_URL` | production | Canonical site URL, used for metadata and the sitemap. |
-| `NEXT_PUBLIC_ADSENSE_*` | no | AdSense publisher ID and slot IDs. Leave blank to show labeled placeholders. |
+| `VIDEO_PREROLL_PATH` | no | Root-relative path to a licensed MP4/WebM deployed under `public/` (for example `/sponsors/promo.mp4`). Blank disables pre-roll. |
+| `NEXT_PUBLIC_ADSENSE_CLIENT` | no | Legacy publisher ID used only to generate `/ads.txt`; it does not enable ads. |
 
 See `.env.example` for the full list. Apply migrations before enabling creator uploads or analytics. Creator uploads currently support only `STORAGE_PROVIDER=local` and require persistent storage; Vercel Blob creator uploads are not yet supported. User signup, upload, and playback must be tested against your configured Neon Auth instance and PostgreSQL database before deployment. The creator studio does not yet provide payouts, account-synced lists/subscriptions, or the full feature set of YouTube. Creator uploads are blocked on Vercel until a suitable durable upload backend is implemented. Before opening uploads to the public, add per-user quotas, abuse controls, content moderation, operational monitoring, and cleanup for unattached finalized creator assets.
 
@@ -84,7 +85,7 @@ The default quota is 10 GB (`UPLOAD_STORAGE_GB`) and counts both providers. File
 
 ## Ads
 
-Add your AdSense publisher ID and ad-unit IDs to the environment. Every placement is already wrapped with an "Advertisement" label and falls back to a clearly marked demo slot when unconfigured. `/ads.txt` is generated from your publisher ID, and `/adsense-setup` documents each placement.
+Display placements and the AdSense script are disabled. To show a directly sold sponsor clip, place an MP4 or WebM you have the rights to use under `public/`, set `VIDEO_PREROLL_PATH` to its root-relative path (for example `/sponsors/promo.mp4`), and redeploy. The player labels it as an advertisement, offers a skip button after five seconds, and falls back to the requested video if the clip fails or stalls. The clip is not an ad-network integration: there is no targeting, campaign management, click-through, impression measurement, or automated revenue. Google AdSense display slots cannot simply be turned into video ads; a compliant video-ad provider (e.g. VAST/IMA), appropriate consent, or server-side ad insertion would require separate integration. No client-side or server-side approach can guarantee immunity from all ad blockers. `/ads.txt` remains for legacy publisher verification and does not enable ads.
 
 ## Deployment
 

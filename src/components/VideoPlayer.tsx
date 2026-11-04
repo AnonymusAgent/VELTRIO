@@ -2,11 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 import { CircleAlert, Gauge, PictureInPicture2, RotateCcw } from "lucide-react";
 import type { Video } from "@/lib/data";
+import InStreamPreroll from "./InStreamPreroll";
 import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
 
 type VideoElementWithPip = HTMLVideoElement & { requestPictureInPicture?: () => Promise<unknown> };
 
-export default function VideoPlayer({ video }: { video: Video }) {
+export default function VideoPlayer({ video, prerollPath }: { video: Video; prerollPath?: string }) {
+  const [prerollFinished, setPrerollFinished] = useState(!prerollPath);
   const [error, setError] = useState(false);
   const preferredSpeed = useLocalStorageValue("vh-playback-speed");
   const resumeEnabled = useLocalStorageValue("vh-resume-enabled") !== "false";
@@ -84,7 +86,11 @@ export default function VideoPlayer({ video }: { video: Video }) {
 
   return <div className="video-player-shell overflow-hidden rounded-xl border border-white/10 bg-black">
     <div className="video-stage">
-      <video ref={videoRef} key={video.videoUrl} src={video.videoUrl || undefined} poster={video.thumbnail} controls playsInline preload="metadata" onKeyDown={event => {
+      {!prerollFinished && prerollPath && <InStreamPreroll src={prerollPath} poster={video.thumbnail} onFinish={startContent => {
+        setPrerollFinished(true);
+        if (startContent) requestAnimationFrame(() => { void videoRef.current?.play().catch(() => {}); });
+      }} />}
+      <video style={prerollFinished ? undefined : { display: "none" }} ref={videoRef} key={video.videoUrl} src={video.videoUrl || undefined} poster={video.thumbnail} controls playsInline preload="metadata" onKeyDown={event => {
         if (event.altKey || event.ctrlKey || event.metaKey || !videoRef.current) return;
         const player = videoRef.current;
         if (event.key.toLowerCase() === "k") { event.preventDefault(); if (player.paused) void player.play().catch(() => {}); else player.pause(); }
@@ -92,9 +98,9 @@ export default function VideoPlayer({ video }: { video: Video }) {
         if (event.key.toLowerCase() === "l") { event.preventDefault(); player.currentTime = Math.min(player.duration || Infinity, player.currentTime + 10); }
         if (event.key.toLowerCase() === "f" && player.requestFullscreen) { event.preventDefault(); void player.requestFullscreen().catch(() => {}); }
       }} className="aspect-video w-full bg-black object-contain" onLoadedMetadata={handleMetadata} onPlaying={countView} onTimeUpdate={event => { if (!event.currentTarget.paused && lastTick.current !== null) tickWatch(); saveProgress(event.currentTarget.currentTime); }} onPause={event => { if (!event.currentTarget.ended) saveProgress(event.currentTarget.currentTime); flushWatch("progress"); }} onEnded={() => { writeLocalStorage(progressKey, "0"); updateList("vh-continue-watching", false); flushWatch("complete"); }} onError={() => setError(true)} aria-label={video.title}>Your browser does not support HTML5 video.</video>
-      {hasResume && !resumeDismissed && <div className="video-resume-prompt" role="status"><RotateCcw size={14} /><span>Continue from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}?</span><button type="button" onClick={() => setResumeDismissed(true)}>Continue</button><button type="button" aria-label="Restart video" onClick={restart}>Restart</button></div>}
+      {prerollFinished && hasResume && !resumeDismissed && <div className="video-resume-prompt" role="status"><RotateCcw size={14} /><span>Continue from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}?</span><button type="button" onClick={() => setResumeDismissed(true)}>Continue</button><button type="button" aria-label="Restart video" onClick={restart}>Restart</button></div>}
     </div>
-    <div className="video-player-tools" aria-label="Player options">
+    <div className="video-player-tools" aria-label="Player options" hidden={!prerollFinished}>
       <label><Gauge size={13} /><span>Speed</span><select value={speed} onChange={event => changeSpeed(event.target.value)} aria-label="Playback speed"><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
       <button type="button" onClick={pictureInPicture} className="player-tool-button"><PictureInPicture2 size={14} /> Picture in picture</button>
       <p>K play/pause · J / L skip 10s · F fullscreen</p>
