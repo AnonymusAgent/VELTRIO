@@ -32,7 +32,9 @@ The admin account is provisioned automatically on first login from `ADMIN_EMAIL`
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. |
+| `DATABASE_URL` | yes | Direct PostgreSQL connection string. Used by Drizzle schema commands. |
+| `DATABASE_URL_POOLED` | recommended | Pooled runtime connection string. Used by the app when present; recommended for Neon on Vercel. |
+| `NEON_AUTH_BASE_URL` | no | Neon Auth base URL. Stored for configuration; the current admin studio still uses its built-in email/password login. |
 | `ADMIN_EMAIL` | yes | The single admin login email. |
 | `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the admin account. |
 | `ADMIN_RECOVERY_CODE` | recommended | One-time recovery code for password reset. Cleared after use. |
@@ -55,11 +57,11 @@ If a push prompts interactively in a non-TTY environment, run `npx drizzle-kit p
 
 > Upgrading an existing database: tables from retired integrations (`telegram_posts`, `submissions`, `ad_settings`, `newsletter`) and the unused `embed_url`, `source_url`, `telegram_post_url`, `telegram_file_id`, `category_id` columns were removed from the schema. `drizzle-kit push` will drop them if they exist — back up first if you need that historical data.
 
-> `drizzle.config.json` ships with the local development connection string. Update its `dbCredentials.url` to your production database before running migrations against a hosted database, or run `drizzle-kit` with your own config.
+> `drizzle.config.ts` reads `DATABASE_URL` from `.env`. For Neon, keep `DATABASE_URL` as the direct (non-pooled) endpoint and set `DATABASE_URL_POOLED` for the running app. Do not run schema pushes through the pooler.
 
 ## Uploads and storage
 
-Uploaded media is written to `UPLOAD_DIR` and served through `/api/media/[id]` with `206 Partial Content` range support. **Set `UPLOAD_DIR` to a persistent volume before deploying** — serverless filesystems are ephemeral and uploaded videos will be lost on redeploy.
+Uploaded media is written to `UPLOAD_DIR` and served through `/api/media/[id]` with `206 Partial Content` range support. **Set `UPLOAD_DIR` to a persistent volume before deploying** — serverless filesystems are ephemeral and uploaded videos will be lost on redeploy. Neon persists the database, not uploaded video files; Vercel deployments need separate durable object/blob storage for media.
 
 The default quota is 10 GB (`UPLOAD_STORAGE_GB`). File signatures are validated, so a renamed file cannot masquerade as a valid video or image.
 
