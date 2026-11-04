@@ -12,6 +12,7 @@ import "@fontsource/outfit/800.css";
 import "./globals.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: { default: "Video Hub — Every story starts with play", template: "%s | Video Hub" },
@@ -19,5 +20,5 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="en"><body><BrandIntro /><AppChrome>{children}</AppChrome></body></html>;
+  return <html lang="en"><body><BrandIntro /><AppChrome>{children}</AppChrome><Analytics /></body></html>;
 }
