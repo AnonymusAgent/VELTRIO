@@ -219,6 +219,18 @@ export const muxUploads = pgTable("mux_uploads", {
   assetIdx: index("mux_uploads_asset_idx").on(table.assetId),
 }));
 
+// One row per verified Mux webhook delivery. A signature that fails verification
+// never reaches this table, so a recent row is proof that the deployment holds
+// the same signing secret as the Mux endpoint. Kept small: the last receipt only
+// needs to be read by operators diagnosing a configuration problem.
+export const muxWebhookReceipts = pgTable("mux_webhook_receipts", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  eventType: varchar("event_type", { length: 120 }).notNull(),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+}, (table) => ({
+  receivedIdx: index("mux_webhook_receipts_received_idx").on(table.receivedAt),
+}));
+
 // Remembered playback positions for signed-in viewers, keyed by user + video.
 // Signed-out viewing keeps using the existing browser-local progress.
 export const watchProgress = pgTable("watch_progress", {

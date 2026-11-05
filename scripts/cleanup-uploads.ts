@@ -2,7 +2,7 @@ import "dotenv/config";
 import { del as deleteBlob, list } from "@vercel/blob";
 import { and, eq, lt, sql } from "drizzle-orm";
 import { db, pool } from "../src/db";
-import { mediaAssets, muxUploads } from "../src/db/schema";
+import { mediaAssets, muxUploads, muxWebhookReceipts } from "../src/db/schema";
 import { removeAssetFile, removeStoredAsset } from "../src/lib/storage";
 
 const ageHours = Math.max(1, Number(process.env.UPLOAD_CLEANUP_AGE_HOURS || 24));
@@ -55,6 +55,13 @@ async function reconcileMuxUploads() {
   return cancelled;
 }
 
+// Webhook receipts exist to prove the endpoint works, so only recent ones are
+// useful. Prune anything older than the cleanup window to keep the table tiny.
+async function pruneWebhookReceipts() {
+  const [row] = await db.delete(muxWebhookReceipts).where(lt(muxWebhookReceipts.receivedAt, cutoff)).returning({ id: muxWebhookReceipts.id });
+  return row ? 1 : 0;
+}
+
 async function main() {
   const stale = await db.select().from(mediaAssets).where(and(eq(mediaAssets.status, "uploading"), lt(mediaAssets.createdAt, cutoff)));
   for (const asset of stale) {
@@ -64,7 +71,8 @@ async function main() {
   }
   const orphanedBlobs = await removeOrphanedBlobs();
   const cancelledMux = await reconcileMuxUploads();
-  console.log(`Removed ${stale.length} abandoned upload${stale.length === 1 ? "" : "s"}, ${orphanedBlobs} orphaned blob${orphanedBlobs === 1 ? "" : "s"} and cancelled ${cancelledMux} stale streaming session${cancelledMux === 1 ? "" : "s"}.`);
+  const prunedReceipts = await pruneWebhookReceipts();
+  console.log(`Removed ${stale.length} abandoned upload${stale.length === 1 ? "" : "s"}, ${orphanedBlobs} orphaned blob${orphanedBlobs === 1 ? "" : "s"} and cancelled ${cancelledMux} stale streaming session${cancelledMux === 1 ? "" : "s"}.${prunedReceipts ? " Pruned old webhook receipts." : ""}`);
 }
 
 main().catch(error => { console.error(error instanceof Error ? error.message : "Upload cleanup failed."); process.exitCode = 1; }).finally(() => pool.end());
