@@ -11,6 +11,22 @@ export const dynamic = "force-dynamic";
 type WebhookBody = { type?: string; id?: string; data?: { id?: string; asset_id?: string; playback_ids?: { id: string; policy: string }[]; duration?: number; passthrough?: string; errors?: { messages?: string[] } } };
 
 /**
+ * Opening this URL in a browser sends GET, not POST. Answer it explicitly so a
+ * configuration check does not look like a broken page, and so the response
+ * states whether the signing secret is actually configured. Nothing secret is
+ * returned and no work is performed.
+ */
+export async function GET() {
+  const config = muxConfig();
+  return NextResponse.json({
+    endpoint: "Mux webhook receiver",
+    method: "POST only — Mux delivers events here automatically; there is nothing to open in a browser.",
+    streamingConfigured: !!config,
+    webhookConfigured: !!config?.webhookSecret,
+  }, { status: 200, headers: { "Cache-Control": "no-store", Allow: "POST" } });
+}
+
+/**
  * Mux status callbacks. The raw body is verified before parsing, only a small
  * allowlist of event types is honoured, and every handler is idempotent so a
  * retried or out-of-order delivery cannot corrupt publication state.
