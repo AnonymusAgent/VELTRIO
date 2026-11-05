@@ -71,6 +71,29 @@ export function createMuxClient(config: MuxConfig, options: { baseURL?: string }
   return new Mux({ tokenId: config.tokenId, tokenSecret: config.tokenSecret, webhookSecret: config.webhookSecret || undefined, maxRetries: 0, baseURL: options.baseURL || process.env.MUX_API_BASE_URL || undefined });
 }
 
+export type MuxProbe = { ok: true; assetsVisible: number } | { ok: false; reason: "not_configured" | "credentials_rejected" | "unreachable" | "request_failed" };
+
+/**
+ * Read-only credential probe. Makes a single "list one asset" call so an
+ * operator can confirm a deployment can actually reach Mux. Never returns the
+ * token, the account, or any asset data; only pass/fail and a reason.
+ */
+export async function probeMuxCredentials(env: Environment = process.env): Promise<MuxProbe> {
+  const config = muxConfig(env);
+  if (!config) return { ok: false, reason: "not_configured" };
+  try {
+    const assets = await createMuxClient(config).video.assets.list({ limit: 1 });
+    return { ok: true, assetsVisible: Array.isArray(assets.data) ? assets.data.length : 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Mux request failed.";
+    const reason = /40[13]/.test(message) ? "credentials_rejected" as const
+      : /ENOTFOUND|fetch failed|ETIMEDOUT|ECONN/i.test(message) ? "unreachable" as const
+      : "request_failed" as const;
+    console.warn("Mux credential probe failed:", reason, message.slice(0, 160));
+    return { ok: false, reason };
+  }
+}
+
 /** Signed playback is used whenever a signing key exists; otherwise public. */
 export function playbackPolicies(config: MuxConfig): ("signed" | "public")[] {
   return canSignPlayback(config) ? ["signed"] : ["public"];
