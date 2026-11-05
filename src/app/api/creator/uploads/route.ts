@@ -10,6 +10,7 @@ import { assertSameOrigin, jsonBody, apiError, HttpError } from "@/lib/http";
 import { validateUpload, ensureStorage, assetPath, removeAssetFile, STORAGE_QUOTA } from "@/lib/storage";
 import { CHUNK_SIZE } from "@/lib/admin-shared";
 import { creatorStorageIssue } from "@/lib/creator-storage";
+import { isMuxEnabled } from "@/lib/mux-stream";
 
 export const runtime = "nodejs";
 export async function POST(request: Request) {
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const user = await requireUser();
+    // With Mux configured, the legacy chunked path is disabled: creator videos
+    // stream through Mux instead of filling a serverless filesystem.
+    if (isMuxEnabled()) throw new HttpError(409, "Use the Mux streaming uploader at /studio/upload.");
     const issue = creatorStorageIssue();
     if (issue) throw new HttpError(503, issue);
     const body = await jsonBody(request);

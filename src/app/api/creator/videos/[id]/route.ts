@@ -6,6 +6,7 @@ import { removeStoredAsset } from "@/lib/storage";
 import { requireUser } from "@/lib/user-auth";
 import { assertSameOrigin, apiError, HttpError, jsonBody } from "@/lib/http";
 import { videoDetails } from "@/lib/video-admin";
+import { deleteMuxAsset } from "@/lib/mux-stream";
 
 type Context = { params: Promise<{ id: string }> };
 async function ownedVideo(id: string, userId: string) {
@@ -22,6 +23,7 @@ export async function PATCH(request: Request, { params }: Context) {
     const body = await jsonBody(request);
     const details = videoDetails({ ...video, ...body, isFeatured: false });
     await db.update(videos).set({ ...details, isFeatured: false, publishedAt: details.status === "published" ? video.publishedAt || new Date() : video.publishedAt, updatedAt: new Date() }).where(and(eq(videos.id, video.id), eq(videos.ownerUserId, user.id)));
+    await deleteMuxAsset(video);
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }
 }

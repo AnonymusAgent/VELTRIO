@@ -59,6 +59,7 @@ export function mapVideo(row: typeof videos.$inferSelect): Video {
     tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
     isFeatured: row.isFeatured || false,
     publishedAt: (row.publishedAt || row.createdAt || new Date()).toISOString(), videoUrl: row.videoUrl,
+    muxPlaybackId: row.muxPlaybackId, muxStatus: row.muxStatus, durationSeconds: row.durationSeconds,
   };
 }
 export async function getPublicVideos(options: PublicVideoQuery = {}): Promise<Video[]> {
@@ -89,6 +90,7 @@ export async function getAdminVideos(): Promise<AdminVideo[]> {
     videoUrl: row.videoUrl || "", status: row.status, categorySlug: row.categorySlug || "short-films", categoryName: row.categoryName || "Short films",
     isFeatured: row.isFeatured || false, views: row.views || 0, likes: row.likes || 0, duration: formatDuration(row.durationSeconds, row.duration),
     fileSize: row.fileSize || 0, createdAt: (row.createdAt || new Date()).toISOString(), rightsConfirmed: row.rightsConfirmed,
+    muxStatus: row.muxStatus, muxPlaybackId: row.muxPlaybackId,
   }));
 }
 export async function getStorageUsage() {

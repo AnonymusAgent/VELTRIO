@@ -2,7 +2,7 @@ import "dotenv/config";
 import { del as deleteBlob, list } from "@vercel/blob";
 import { and, eq, lt, sql } from "drizzle-orm";
 import { db, pool } from "../src/db";
-import { mediaAssets } from "../src/db/schema";
+import { mediaAssets, muxUploads } from "../src/db/schema";
 import { removeAssetFile, removeStoredAsset } from "../src/lib/storage";
 
 const ageHours = Math.max(1, Number(process.env.UPLOAD_CLEANUP_AGE_HOURS || 24));
@@ -35,6 +35,26 @@ async function removeOrphanedBlobs() {
   return removed;
 }
 
+// Abandoned streaming sessions: a waiting upload older than the cleanup window
+// is marked cancelled so a late client upload cannot create an unattached
+// (billable) Mux asset. Finished-but-unattached assets are kept for review.
+async function reconcileMuxUploads() {
+  if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET || process.env.MUX_ENABLED === "false") return 0;
+  const { muxUploadView, syncMuxUpload } = await import("../src/lib/mux-stream");
+  const stale = await db.select().from(muxUploads).where(and(eq(muxUploads.status, "waiting"), lt(muxUploads.createdAt, cutoff)));
+  let cancelled = 0;
+  for (const row of stale) {
+    const synced = await syncMuxUpload(row).catch(() => row);
+    if (synced.status === "waiting" || synced.status === "created") {
+      await db.update(muxUploads).set({ status: "cancelled", updatedAt: new Date() }).where(eq(muxUploads.id, row.id));
+      cancelled++;
+    } else if (synced.status === "ready" && !synced.videoId) {
+      console.log("Mux upload ready but not attached to a video:", muxUploadView(synced).id);
+    }
+  }
+  return cancelled;
+}
+
 async function main() {
   const stale = await db.select().from(mediaAssets).where(and(eq(mediaAssets.status, "uploading"), lt(mediaAssets.createdAt, cutoff)));
   for (const asset of stale) {
@@ -43,7 +63,8 @@ async function main() {
     await db.delete(mediaAssets).where(eq(mediaAssets.id, asset.id));
   }
   const orphanedBlobs = await removeOrphanedBlobs();
-  console.log(`Removed ${stale.length} abandoned upload${stale.length === 1 ? "" : "s"} and ${orphanedBlobs} orphaned blob${orphanedBlobs === 1 ? "" : "s"}.`);
+  const cancelledMux = await reconcileMuxUploads();
+  console.log(`Removed ${stale.length} abandoned upload${stale.length === 1 ? "" : "s"}, ${orphanedBlobs} orphaned blob${orphanedBlobs === 1 ? "" : "s"} and cancelled ${cancelledMux} stale streaming session${cancelledMux === 1 ? "" : "s"}.`);
 }
 
 main().catch(error => { console.error(error instanceof Error ? error.message : "Upload cleanup failed."); process.exitCode = 1; }).finally(() => pool.end());

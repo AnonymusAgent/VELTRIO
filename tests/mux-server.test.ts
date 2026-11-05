@@ -1,21 +1,36 @@
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
+import { createHmac, generateKeyPairSync } from "node:crypto";
 import Mux from "@mux/ts";
-import { muxConfig, createMuxClient, createMuxDirectUpload, verifyMuxWebhook } from "../src/lib/mux-server";
+import { muxConfig, createMuxClient, createMuxDirectUpload, verifyMuxWebhook, signPlaybackToken, canSignPlayback, playbackPolicies } from "../src/lib/mux-server";
 
 async function main() {
-  const env = { MUX_ENABLED: "true", MUX_TOKEN_ID: "unit-id", MUX_TOKEN_SECRET: "unit-secret", MUX_WEBHOOK_SECRET: "unit-webhook-secret", MUX_PLAYBACK_SIGNING_KEY_ID: "unit-key", MUX_PLAYBACK_PRIVATE_KEY: "unit-private-key", MUX_CORS_ORIGIN: "https://veltrio.example", VERCEL_ENV: "preview" };
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048, privateKeyEncoding: { type: "pkcs1", format: "pem" }, publicKeyEncoding: { type: "spki", format: "pem" } });
+  const env = {
+    MUX_TOKEN_ID: "unit-id", MUX_TOKEN_SECRET: "unit-secret", MUX_WEBHOOK_SECRET: "unit-webhook-secret",
+    MUX_PLAYBACK_SIGNING_KEY_ID: "unit-key", MUX_PLAYBACK_PRIVATE_KEY: privateKey,
+    MUX_CORS_ORIGIN: "https://veltrio.example", VERCEL_ENV: "preview",
+  };
+
+  // Credentials alone are enough to enable the streaming pipeline; MUX_ENABLED
+  // can still hard-disable it.
   assert.equal(muxConfig({}), null);
-  assert.throws(() => muxConfig({ MUX_ENABLED: "true" }), /incomplete/);
-  assert.throws(() => muxConfig({ ...env, MUX_CORS_ORIGIN: "https://veltrio.example/path" }), /origin/);
-  assert.throws(() => muxConfig({ ...env, MUX_CORS_ORIGIN: "http://veltrio.example" }), /origin/);
+  assert.equal(muxConfig({ MUX_TOKEN_ID: "id" }), null);
+  assert.equal(muxConfig({ MUX_TOKEN_ID: "id", MUX_TOKEN_SECRET: "secret", MUX_ENABLED: "false" }), null);
   assert.throws(() => muxConfig({ ...env, MUX_MAX_RESOLUTION: "4k" }), /RESOLUTION/);
+
   const config = muxConfig(env)!;
   assert.equal(config.test, true);
   assert.equal(config.maxResolution, "1080p");
   assert.equal(muxConfig({ ...env, VERCEL_ENV: "production", MUX_MAX_RESOLUTION: "2160p" })!.test, false);
-  assert.equal(muxConfig({ ...env, VERCEL_ENV: "production", MUX_TEST_MODE: "true" })!.test, true);
+  assert.equal(muxConfig({ MUX_TOKEN_ID: "id", MUX_TOKEN_SECRET: "secret" })!.corsOrigin.includes("localhost"), true);
   assert.equal(createMuxClient(config).maxRetries, 0);
+
+  // Signed playback whenever a usable RSA key is present, public otherwise.
+  assert.equal(canSignPlayback(config), true);
+  assert.deepEqual(playbackPolicies(config), ["signed"]);
+  const unsignedConfig = muxConfig({ MUX_TOKEN_ID: "id", MUX_TOKEN_SECRET: "secret" })!;
+  assert.equal(canSignPlayback(unsignedConfig), false);
+  assert.deepEqual(playbackPolicies(unsignedConfig), ["public"]);
 
   let sent: Record<string, unknown> | undefined;
   const client = new Mux({ tokenId: config.tokenId, tokenSecret: config.tokenSecret, webhookSecret: config.webhookSecret, maxRetries: 0, fetch: async (_input, init) => {
@@ -24,8 +39,19 @@ async function main() {
   } });
   const id = "f02a2987-7a9b-4c32-9412-773406512e15";
   await createMuxDirectUpload(client, { ...config, maxResolution: "2160p" }, id);
-  assert.deepEqual(sent, { cors_origin: config.corsOrigin, timeout: 3600, test: true, new_asset_settings: { playback_policies: ["signed"], video_quality: "basic", max_resolution_tier: "2160p", passthrough: id } });
+  assert.deepEqual((sent as { new_asset_settings: unknown }).new_asset_settings, { playback_policies: ["signed"], video_quality: "basic", max_resolution_tier: "2160p", passthrough: id, meta: { external_id: id } });
   await assert.rejects(() => createMuxDirectUpload(client, config, "invalid"), /upload ID/);
+
+  // Playback tokens are RS256 JWTs with the playback ID as `sub`.
+  const token = signPlaybackToken(config, { playbackId: "abc123", audience: "t", expiresIn: 3600, thumbnailTime: 12 });
+  const [header, payload] = token.split(".");
+  assert.equal(JSON.parse(Buffer.from(header, "base64url").toString()).alg, "RS256");
+  const claims = JSON.parse(Buffer.from(payload, "base64url").toString());
+  assert.equal(claims.sub, "abc123");
+  assert.equal(claims.aud, "t");
+  assert.equal(claims.thumbtime, 12);
+  assert.ok(claims.exp > Math.floor(Date.now() / 1000));
+  assert.throws(() => signPlaybackToken(unsignedConfig, { playbackId: "abc", audience: "t" }), /signing/);
 
   const body = JSON.stringify({ id: "evt_123", type: "video.asset.ready", data: { id: "asset_123" } });
   const bytes = new TextEncoder().encode(body);
@@ -38,6 +64,6 @@ async function main() {
   await assert.rejects(() => verifyMuxWebhook(client, bytes, headers(timestamp - 301)));
   await assert.rejects(() => verifyMuxWebhook(client, bytes, headers(timestamp + 301)));
   await assert.rejects(() => verifyMuxWebhook(client, bytes, new Headers({ "mux-signature": `t=${timestamp},t=${timestamp},v1=${signature(timestamp)}` })));
-  console.log("PASS: disabled-by-default Mux configuration, signed 4K upload options and verified webhook signatures.");
+  console.log("PASS: credentials enable Mux, signed 4K upload options, RS256 playback tokens and verified webhook signatures.");
 }
 void main();

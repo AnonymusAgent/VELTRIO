@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { apiError, assertSameOrigin, jsonBody, HttpError } from "@/lib/http";
 import { readyAsset, videoDetails } from "@/lib/video-admin";
 import { removeStoredAsset } from "@/lib/storage";
+import { deleteMuxAsset } from "@/lib/mux-stream";
 
 type Context = { params: Promise<{ id: string }> };
 async function find(id: string) {
@@ -27,6 +28,7 @@ export async function PATCH(request: Request, { params }: Context) {
     } else await readyAsset(video.mediaAssetId, "video", admin.id);
     const thumb = body.thumbnailAssetId ? await readyAsset(body.thumbnailAssetId, "thumbnail", admin.id) : null;
     await db.update(videos).set({ ...details, ...(thumb ? { thumbnailAssetId: thumb.id, thumbnail: `/api/media/${thumb.id}` } : {}), publishedAt: details.status === "published" ? video.publishedAt || new Date() : video.publishedAt, updatedAt: new Date() }).where(eq(videos.id, video.id));
+    await deleteMuxAsset(video);
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }
 }

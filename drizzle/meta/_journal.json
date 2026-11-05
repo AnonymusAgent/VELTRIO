@@ -43,6 +43,13 @@
       "when": 1793834290540,
       "tag": "0005_orange_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793888880099,
+      "tag": "0006_bizarre_network",
+      "breakpoints": true
     }
   ]
 }
