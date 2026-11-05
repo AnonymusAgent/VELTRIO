@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { muxUploads, videos } from "@/db/schema";
+import { muxUploads, muxWebhookReceipts, videos } from "@/db/schema";
 import { readBounded } from "@/lib/http";
 import { createMuxClient, formatMuxDuration, muxConfig, verifyMuxWebhook } from "@/lib/mux-server";
 
@@ -18,11 +18,18 @@ type WebhookBody = { type?: string; id?: string; data?: { id?: string; asset_id?
  */
 export async function GET() {
   const config = muxConfig();
+  // A receipt only exists if a delivery passed signature verification, which
+  // proves the stored secret matches the Mux endpoint's secret.
+  const last = await db.select({ eventType: muxWebhookReceipts.eventType, receivedAt: muxWebhookReceipts.receivedAt })
+    .from(muxWebhookReceipts).orderBy(desc(muxWebhookReceipts.receivedAt)).limit(1)
+    .then(rows => rows[0] || null).catch(() => null);
   return NextResponse.json({
     endpoint: "Mux webhook receiver",
     method: "POST only — Mux delivers events here automatically; there is nothing to open in a browser.",
     streamingConfigured: !!config,
     webhookConfigured: !!config?.webhookSecret,
+    lastVerifiedDelivery: last ? { event: last.eventType, at: last.receivedAt.toISOString() } : null,
+    verified: !!last,
   }, { status: 200, headers: { "Cache-Control": "no-store", Allow: "POST" } });
 }
 
@@ -43,6 +50,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
   try {
+    // Signature verified. Record a receipt so an operator can confirm the
+    // endpoint and secret pair actually work; failures here must not block.
+    await db.insert(muxWebhookReceipts)
+      .values({ id: `${body.id || Date.now()}:${body.type || "unknown"}`.slice(0, 128), eventType: (body.type || "unknown").slice(0, 120) })
+      .onConflictDoNothing()
+      .catch(() => {});
     const data = body.data || {};
     if (body.type === "video.upload.asset_created" || body.type === "video.upload.errored") {
       if (data.id) await db.update(muxUploads).set({

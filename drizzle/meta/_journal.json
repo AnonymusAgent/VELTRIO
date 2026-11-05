@@ -50,6 +50,13 @@
       "when": 1793888880099,
       "tag": "0006_bizarre_network",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793892173401,
+      "tag": "0007_stiff_sunspot",
+      "breakpoints": true
     }
   ]
 }
