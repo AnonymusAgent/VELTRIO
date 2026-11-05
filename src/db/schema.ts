@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, bigint, boolean, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, bigint, boolean, timestamp, jsonb, index, uniqueIndex, doublePrecision } from "drizzle-orm/pg-core";
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -35,6 +35,14 @@ export const videos = pgTable("videos", {
   sourceType: varchar("source_type", { length: 30 }).default("curated").notNull(),
   durationSeconds: integer("duration_seconds"),
   mimeType: varchar("mime_type", { length: 120 }),
+  // Mux streaming pipeline. playbackId is public (IMDb-style) but playback stays
+  // gated behind short-lived server-issued tokens for every request.
+  muxUploadId: varchar("mux_upload_id", { length: 128 }),
+  muxAssetId: varchar("mux_asset_id", { length: 128 }),
+  muxPlaybackId: varchar("mux_playback_id", { length: 128 }),
+  muxStatus: varchar("mux_status", { length: 30 }),
+  muxMaxResolution: varchar("mux_max_resolution", { length: 10 }),
+  muxError: text("mux_error"),
   mediaAssetId: varchar("media_asset_id", { length: 36 }),
   thumbnailAssetId: varchar("thumbnail_asset_id", { length: 36 }),
   fileSize: bigint("file_size", { mode: "number" }).default(0),
@@ -45,6 +53,8 @@ export const videos = pgTable("videos", {
   categoryIdx: index("videos_category_idx").on(table.categorySlug, table.status),
   creatorIdx: index("videos_creator_idx").on(table.creator, table.status),
   mediaAssetIdx: index("videos_media_asset_idx").on(table.mediaAssetId),
+  muxUploadIdx: uniqueIndex("videos_mux_upload_idx").on(table.muxUploadId),
+  muxAssetIdx: uniqueIndex("videos_mux_asset_idx").on(table.muxAssetId),
   ownerUserIdx: index("videos_owner_user_idx").on(table.ownerUserId),
 }));
 
@@ -184,4 +194,40 @@ export const pageViews = pgTable("page_views", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   createdIdx: index("page_views_created_idx").on(table.createdAt),
+}));
+
+// Upload sessions for the Mux streaming pipeline. A row is created before any
+// billable provider resource so a crash cannot leave an unbounded billable
+// upload behind. videoId is null until the first save/publish.
+export const muxUploads = pgTable("mux_uploads", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  ownerUserId: varchar("owner_user_id", { length: 255 }).notNull(),
+  videoId: integer("video_id").references(() => videos.id, { onDelete: "set null" }),
+  uploadId: varchar("upload_id", { length: 128 }),
+  assetId: varchar("asset_id", { length: 128 }),
+  playbackId: varchar("playback_id", { length: 128 }),
+  status: varchar("status", { length: 30 }).notNull().default("waiting"),
+  size: bigint("size", { mode: "number" }).notNull().default(0),
+  durationSeconds: integer("duration_seconds"),
+  title: varchar("title", { length: 300 }),
+  error: text("error"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  ownerStatusIdx: index("mux_uploads_owner_status_idx").on(table.ownerUserId, table.status),
+  uploadIdx: uniqueIndex("mux_uploads_upload_idx").on(table.uploadId),
+  assetIdx: index("mux_uploads_asset_idx").on(table.assetId),
+}));
+
+// Remembered playback positions for signed-in viewers, keyed by user + video.
+// Signed-out viewing keeps using the existing browser-local progress.
+export const watchProgress = pgTable("watch_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  videoId: integer("video_id").notNull().references(() => videos.id, { onDelete: "cascade" }),
+  position: doublePrecision("position").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userVideoIdx: uniqueIndex("watch_progress_user_video_idx").on(table.userId, table.videoId),
+  userUpdatedIdx: index("watch_progress_user_updated_idx").on(table.userId, table.updatedAt),
 }));

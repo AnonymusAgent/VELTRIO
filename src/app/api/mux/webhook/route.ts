@@ -1,0 +1,67 @@
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { muxUploads, videos } from "@/db/schema";
+import { readBounded } from "@/lib/http";
+import { createMuxClient, formatMuxDuration, muxConfig, verifyMuxWebhook } from "@/lib/mux-server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type WebhookBody = { type?: string; id?: string; data?: { id?: string; asset_id?: string; playback_ids?: { id: string; policy: string }[]; duration?: number; passthrough?: string; errors?: { messages?: string[] } } };
+
+/**
+ * Mux status callbacks. The raw body is verified before parsing, only a small
+ * allowlist of event types is honoured, and every handler is idempotent so a
+ * retried or out-of-order delivery cannot corrupt publication state.
+ */
+export async function POST(request: Request) {
+  const config = muxConfig();
+  if (!config) return NextResponse.json({ error: "Streaming is not configured." }, { status: 503 });
+  if (!config.webhookSecret) return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
+  let body: WebhookBody;
+  try {
+    const raw = await readBounded(request, 256 * 1024);
+    body = (await verifyMuxWebhook(createMuxClient(config), raw, request.headers)) as WebhookBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
+  }
+  try {
+    const data = body.data || {};
+    if (body.type === "video.upload.asset_created" || body.type === "video.upload.errored") {
+      if (data.id) await db.update(muxUploads).set({
+        status: body.type === "video.upload.errored" ? "errored" : "processing",
+        assetId: data.asset_id || null,
+        error: body.type === "video.upload.errored" ? "Mux could not accept this file." : null,
+        updatedAt: new Date(),
+      }).where(eq(muxUploads.uploadId, data.id));
+    }
+    if ((body.type === "video.asset.ready" || body.type === "video.asset.errored") && data.id) {
+      const ready = body.type === "video.asset.ready";
+      const playbackId = data.playback_ids?.[0]?.id || null;
+      const duration = typeof data.duration === "number" ? Math.round(data.duration) : null;
+      const error = ready ? null : data.errors?.messages?.join(" ") || "Mux could not process this file.";
+      const passthrough = typeof data.passthrough === "string" && /^[a-f0-9-]{36}$/i.test(data.passthrough) ? data.passthrough : null;
+      await db.update(muxUploads).set({
+        status: ready ? "ready" : "errored",
+        assetId: data.id,
+        ...(playbackId ? { playbackId } : {}),
+        ...(duration ? { durationSeconds: duration } : {}),
+        error,
+        updatedAt: new Date(),
+      }).where(passthrough ? eq(muxUploads.id, passthrough) : eq(muxUploads.assetId, data.id));
+      await db.update(videos).set({
+        muxStatus: ready ? "ready" : "errored",
+        muxAssetId: data.id,
+        ...(playbackId ? { muxPlaybackId: playbackId } : {}),
+        muxError: error,
+        ...(ready && duration ? { durationSeconds: duration, duration: formatMuxDuration(duration) } : {}),
+      }).where(passthrough ? eq(videos.muxUploadId, passthrough) : eq(videos.muxAssetId, data.id));
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Mux webhook handling failed:", error instanceof Error ? error.message : "unknown");
+    // A non-2xx response makes Mux retry so a transient database failure is not lost.
+    return NextResponse.json({ error: "Retry later." }, { status: 500 });
+  }
+}

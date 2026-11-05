@@ -2,6 +2,7 @@ export type Video = {
   id: number; title: string; slug: string; description: string; thumbnail: string; duration: string;
   views: number; likes: number; category: string; categorySlug: string; creator?: string; tags?: string[];
   isFeatured?: boolean; publishedAt: string; videoUrl?: string | null;
+  muxPlaybackId?: string | null; muxStatus?: string | null; durationSeconds?: number | null;
 };
 
 export const CATEGORIES = [

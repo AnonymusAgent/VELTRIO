@@ -27,6 +27,8 @@ export type AdminVideo = {
   fileSize: number;
   createdAt: string;
   rightsConfirmed: boolean;
+  muxStatus?: string | null;
+  muxPlaybackId?: string | null;
 };
 
 export type AdminProfile = {

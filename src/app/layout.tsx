@@ -12,6 +12,7 @@ import "@fontsource/outfit/800.css";
 import "./globals.css";
 import "./theme.css";
 import "./premium.css";
+import "./cinema.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
