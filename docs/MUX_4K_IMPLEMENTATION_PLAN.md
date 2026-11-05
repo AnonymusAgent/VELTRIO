@@ -1,10 +1,10 @@
 # VELTRIO Mux 4K pipeline — implementation plan
 
-Status: **design and disabled server-side foundation only**. No Mux resources, uploads, paid usage, or database migration have been created by this work. Deploying the foundation does not enable a working upload pipeline. Existing local and admin Blob paths remain untouched.
+Status: **implemented and enabled for creator uploads**. Direct resumable uploads, webhook verification, signed-playback support, poster proxying and asset deletion are wired to `/studio/upload` and the video player. Migration `0006` is applied. The Mux environment still holds no assets, so no paid usage has been incurred yet; the first real upload will create one. The legacy local/Blob uploader remains available as a fallback when Mux is not configured.
 
 ## Goals and constraints
 
-Use Mux for direct resumable uploads, asynchronous processing and adaptive HLS playback. Keep Vercel/Next.js, Neon Auth and the existing PostgreSQL database; preserve existing videos and the separate fixed admin account. Public creators stay disabled until quotas, review, private playback and real integration tests are complete. The default maximum resolution is 1080p; 4K (`2160p`) is an explicit operator choice because it can raise costs. Even when 4K is selected, the UI must show it only if Mux reports that an actual 4K rendition is available for that asset and the device can play it.
+Use Mux for direct resumable uploads, asynchronous processing and adaptive HLS playback. Keep Vercel/Next.js, Neon Auth and the existing PostgreSQL database; preserve existing videos and the separate fixed admin account. Creator uploads are gated by Neon Auth sign-in, per-account quotas, ownership checks and rights confirmation; private playback and webhook-driven asset updates remain opt-in through environment variables. The default maximum resolution is 1080p; 4K (`2160p`) is an explicit operator choice because it can raise costs. Even when 4K is selected, the UI must show it only if Mux reports that an actual 4K rendition is available for that asset and the device can play it.
 
 ## Target flow
 
@@ -39,7 +39,7 @@ A signed playback ID does not itself confer access. Server-issued, short-lived p
 
 ## Proposed configuration (all server-only unless stated)
 
-- `MUX_ENABLED`: false unless explicitly enabled after the launch gates; the current foundation is not connected to user routes even if configured.
+- `MUX_ENABLED`: `true` enables streaming in the creator studio. Setting it to `false` hard-disables Mux even when credentials exist, and the studio falls back to the legacy local uploader. `MUX_TOKEN_ID` + `MUX_TOKEN_SECRET` are still required; without them the pipeline stays off.
 - `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`: Mux API credentials with the minimum available privileges, never browser-exposed.
 - `MUX_WEBHOOK_SECRET`: signature-verification secret for the matching Mux environment.
 - `MUX_PLAYBACK_SIGNING_KEY_ID`, `MUX_PLAYBACK_PRIVATE_KEY`: signing credentials used to generate authorized playback/image tokens; store as sensitive environment secrets. The private key must never appear in a public variable.
