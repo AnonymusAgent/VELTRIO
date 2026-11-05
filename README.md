@@ -99,7 +99,22 @@ Display placements and the AdSense script are disabled. To show a directly sold 
 5. Sign in at `/admin/login`, change the password, and generate a recovery code.
 6. Use separate preview and development databases and authentication settings before running previews. Provision encrypted database and media backups, practice restoring them into an isolated environment, and test rollback procedures before production releases.
 
-The [platform audit and roadmap](docs/PLATFORM_AUDIT_AND_ROADMAP.md) records verified functionality, launch blockers and remaining work. The [Mux 4K implementation plan](docs/MUX_4K_IMPLEMENTATION_PLAN.md) describes the chosen future streaming pipeline, credentials, costs and rollout gates. Its current server-side foundation is disabled and not connected to any route or player; setting variables alone does not enable uploads. A [GitHub Actions workflow template](docs/github-actions-checks.yml) is provided for static checks, unit tests, a dependency audit and a build against dummy configuration. It is not active until installed in `.github/workflows/` by an account with workflow permission, and it would not verify live auth, media uploads, playback or deployed services.
+The [platform audit and roadmap](docs/PLATFORM_AUDIT_AND_ROADMAP.md) records verified functionality, launch blockers and remaining work. The [Mux 4K implementation plan](docs/MUX_4K_IMPLEMENTATION_PLAN.md) describes the streaming pipeline, credentials, costs and rollout gates.
+
+### Streaming uploads (Mux)
+
+Creator uploads stream through Mux, so the app needs no writable disk in production. Set `MUX_ENABLED=true` with `MUX_TOKEN_ID` + `MUX_TOKEN_SECRET` from a Mux environment; browsers then upload straight to Mux over a resumable connection, and portrait, thumbnail and playback URLs are served from Veltrio routes.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET` | yes | Mux API access token. |
+| `MUX_ENABLED` | yes | Must be `true`; `false` hides streaming and falls back to the legacy local uploader. |
+| `MUX_CORS_ORIGIN` | yes in production | Exact public origin allowed to create uploads. |
+| `MUX_MAX_RESOLUTION` | no | Rendition cap, default `1080p` (`2160p` permits 4K). |
+| `MUX_WEBHOOK_SECRET` | no | Verifies `/api/mux/webhook` for instant asset-state updates; polling covers it otherwise. |
+| `MUX_PLAYBACK_SIGNING_KEY_ID`, `MUX_PLAYBACK_PRIVATE_KEY` | no | Enables signed, expiring playback tokens instead of public playback IDs. |
+
+`/api/stream/status` reports whether a deployment is streaming-enabled without exposing credentials. `npm run storage:cleanup` also cancels abandoned streaming sessions so stale uploads never become billable assets. A [GitHub Actions workflow template](docs/github-actions-checks.yml) is provided for static checks, unit tests, a dependency audit and a build against dummy configuration. It is not active until installed in `.github/workflows/` by an account with workflow permission, and it would not verify live auth, media uploads, playback or deployed services.
 
 ## Scripts
 

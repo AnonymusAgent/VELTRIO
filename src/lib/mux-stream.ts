@@ -183,6 +183,27 @@ export async function publishMuxVideo(user: { id: string; name?: string | null }
 }
 
 /** Signed (or public) playback URL for one playback ID. */
+/**
+ * Deletes the Mux asset behind a soft-deleted video. Best effort: a failure
+ * here leaves an orphaned (billable) asset, so it is logged for the cleanup
+ * script rather than surfaced to the creator who just deleted their video.
+ * Ownership is re-checked so a shared asset referenced by a live video stays.
+ */
+export async function deleteMuxAsset(video: { muxAssetId: string | null; muxPlaybackId: string | null }) {
+  const config = muxReady();
+  if (!config || !video.muxAssetId) return false;
+  const [referenced] = await db.select({ id: videos.id }).from(videos).where(and(eq(videos.muxAssetId, video.muxAssetId), ne(videos.status, "deleted"))).limit(1);
+  if (referenced) return false;
+  try {
+    const { client } = muxClient();
+    await client.video.assets.delete(video.muxAssetId);
+    return true;
+  } catch (error) {
+    console.warn(`Mux asset ${video.muxAssetId} was not deleted:`, error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
 export function muxStreamUrl(config: MuxConfig, playbackId: string, audience: "t" | "g" = "t", expiresIn = 60 * 60 * 4) {
   if (canSignPlayback(config)) {
     const token = signPlaybackToken(config, { playbackId, audience, expiresIn });

@@ -646,3 +646,57 @@ html[data-theme="light"] .auth-card { background: #fff; border-color: #e6e5ef; }
 @keyframes intro-progress { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
 @keyframes intro-out { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { .intro-overlay { display: none; } }
+
+/* ---------- Creator studio workspace (admin) reskin ---------- */
+.admin-shell { background: #07080d; }
+.admin-sidebar { width: 244px; padding: 26px 16px; background: linear-gradient(180deg, #0b0c13, #080910); border-right: 1px solid #ffffff0f; }
+.admin-sidebar .brand-logo .brand-wordmark { font-size: 19px; letter-spacing: .2em; }
+.workspace-tag { margin: 12px 0 34px 44px; font-size: 8.5px; letter-spacing: .24em; color: #6e6c85; }
+.nav-label { font-size: 8.5px; letter-spacing: .22em; color: #5d5b73; padding: 0 12px; }
+.admin-nav { gap: 4px; }
+.admin-nav a { padding: 11px 13px; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #9a97ae; border: 1px solid transparent; }
+.admin-nav a:hover { background: #14151f; color: #f0edf8; }
+.admin-nav a.active { background: linear-gradient(100deg, #211a3d, #151426); color: #e9e2ff; border-color: #6a55d84d; box-shadow: inset 0 0 0 1px #ffffff08; }
+.admin-nav a.active:after { background: linear-gradient(140deg, var(--violet), var(--pink)); }
+.sidebar-help { background: linear-gradient(160deg, #191430, #0f0e18); border-color: #2c2748; border-radius: 12px; }
+.sidebar-help svg { color: #b4a5ff; }
+.sidebar-help p { color: #e4dfff; }
+.sidebar-help small { color: #8b87a4; }
+.sidebar-user { border-top-color: #ffffff0f; }
+.user-avatar { background: linear-gradient(140deg, #6d55d8, #c15a8f); border-color: #ffffff26; color: #fff; }
+.admin-main { margin-left: 244px; }
+.admin-topbar { height: 66px; padding: 0 28px; border-bottom: 1px solid #ffffff0f; background: #080910cc; backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 30; }
+.admin-breadcrumb { font-size: 11.5px; color: #7d7b93; }
+.admin-breadcrumb b { color: #e6e2f2; font-weight: 600; }
+.site-status { color: #8f8ca6; }
+.admin-topbar-right .vh-button.ghost { border-radius: 999px; background: #12131d; border-color: #ffffff1a; color: #d9d5e8; }
+.admin-content { max-width: 1440px; padding: 30px 28px 66px; }
+.admin-footer { color: #4c4a5f; padding: 0 28px 26px; }
+.admin-page-heading h1 { font-family: 'Outfit', sans-serif; font-size: clamp(24px, 2.6vw, 32px); font-weight: 800; letter-spacing: -.03em; }
+.admin-page-heading p { color: #83819a; font-size: 12px; }
+.admin-page-heading .vh-button { border-radius: 999px; background: #fff; color: #0a0b12; font-weight: 800; }
+.admin-welcome { border-radius: 18px; border-color: #ffffff12; background: radial-gradient(120% 160% at 0% 0%, #2a1d4f 0%, #14121f 48%, #0b0c13 100%); }
+.admin-welcome h2 { font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: -.035em; }
+.admin-welcome .welcome-mark { opacity: .5; }
+.admin-stats { gap: 12px; }
+.stat-card { border-radius: 14px; border: 1px solid #ffffff12; background: #0b0c13; }
+.stat-card h3 { font-family: 'Outfit', sans-serif; font-weight: 700; letter-spacing: -.02em; }
+.stat-card-top { color: #8b88a1; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.stat-card p { color: #6f6d85; }
+.analytics-strip > div { border-radius: 14px; border-color: #ffffff12; background: #0b0c13; }
+.analytics-strip strong { font-family: 'Outfit', sans-serif; }
+.vh-panel { border-radius: 14px; }
+.panel-heading h2 { font-family: 'Outfit', sans-serif; font-weight: 700; }
+.admin-table th { background: #0c0d15; color: #85829c; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; }
+.admin-table td { border-color: #ffffff0d; color: #b6b3c6; }
+.admin-table td a:hover { color: #fff; }
+.admin-notice { border-radius: 10px; }
+.steps-list .step-number { border-radius: 8px; }
+.admin-topbar .mobile-menu { border-radius: 10px; }
+@media (max-width: 760px) {
+  .admin-sidebar { width: 244px; }
+  .admin-main { margin-left: 0; }
+  .admin-topbar { padding: 0 16px; height: 60px; }
+  .admin-content { padding: 22px 16px 50px; }
+  .admin-topbar-right .site-status, .admin-topbar-right > .vh-button { display: none; }
+}
