@@ -11,12 +11,14 @@ const icons = [Clapperboard, Compass, Music2, Globe2, Sparkles, BookOpen];
 
 export default async function HomePage() {
   let recent: Video[] = [], featured: Video[] = [], trending: Video[] = [];
+  let categoryVideos: Video[][] = [];
   let unavailable = false;
   try {
-    [recent, featured, trending] = await Promise.all([
+    [recent, featured, trending, categoryVideos] = await Promise.all([
       getPublicVideos({ limit: 48 }),
       getPublicVideos({ featured: true, limit: 12 }),
       getPublicVideos({ trending: true, sort: "popular", limit: 12 }),
+      Promise.all(CATEGORIES.map(category => getPublicVideos({ category: category.slug, limit: 12 }))),
     ]);
   } catch { unavailable = true; }
   const spotlight = featured[0] || recent[0];
@@ -29,7 +31,7 @@ export default async function HomePage() {
         <VideoShelf title="Featured stories" description="Handpicked for a closer look." href="/browse" linkLabel="Explore library" videos={featured} />
         <VideoShelf title="Recently uploaded" description="Fresh perspectives from the community." href="/browse" videos={recent.slice(0, 12)} />
         {!recent.length && <div className="empty-editorial"><div className="empty-editorial-mark"><Clapperboard size={25} /></div><div><span className="eyebrow">A SPACE FOR STORIES</span><h2>The first story could be yours.</h2><p>The library is waiting for its first upload. Explore the studio and make something worth watching.</p></div><Link href="/studio/upload" className="vh-button secondary"><Plus size={15} /> Upload a story</Link></div>}
-        {CATEGORIES.map(category => <VideoShelf key={category.slug} title={category.name} href={`/category/${category.slug}`} videos={recent.filter(video => video.categorySlug === category.slug).slice(0, 12)} />)}
+        {CATEGORIES.map((category, index) => <VideoShelf key={category.slug} title={category.name} href={`/category/${category.slug}`} videos={categoryVideos[index] || []} />)}
       </>}
       <section className="category-discovery" id="categories"><div className="shelf-heading"><div><span className="section-kicker">FIND YOUR PERSPECTIVE</span><h2>Explore by category</h2><p>Follow your curiosity, wherever it leads.</p></div><Link href="/browse">Explore all <ArrowUpRight size={15} /></Link></div><div className="category-grid">{CATEGORIES.map((category, index) => { const Icon = icons[index]; return <Link href={`/category/${category.slug}`} className="category-tile" key={category.slug}><span className="category-number">0{index + 1}</span><Icon size={21} strokeWidth={1.5} /><span className="category-name">{category.name}</span><ArrowUpRight size={15} className="category-arrow" /></Link>; })}</div></section>
       <section className="editorial-creator"><div><span className="section-kicker">MADE FOR ORIGINAL VOICES</span><h2>Your story belongs here.</h2><p>Make it personal. Make it memorable. Make it yours.</p></div><Link href="/studio" className="vh-button secondary">Explore creator studio <ArrowUpRight size={15} /></Link></section>

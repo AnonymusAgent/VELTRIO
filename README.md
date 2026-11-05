@@ -37,6 +37,7 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Direct PostgreSQL connection string. Used by Drizzle schema commands. |
 | `DATABASE_URL_POOLED` | recommended | Pooled runtime connection string. Used by the app when present; recommended for Neon on Vercel. |
+| `ALLOW_PREVIEW_DB_MIGRATIONS` | no | Set to `true` for Vercel **preview only** after assigning a separate preview database; otherwise preview builds skip automatic migrations. This does not isolate runtime database access. |
 | `NEON_AUTH_BASE_URL` | for accounts | Neon Auth base URL from the Neon console. Enable email/password sign-in and configure verification and trusted origins there. |
 | `NEON_AUTH_COOKIE_SECRET` | for accounts | Random secret of at least 32 characters used to sign Neon Auth cookies. Keep it private and stable across deployments. |
 | `ADMIN_INITIAL_PASSWORD` | first run | Initial password (12+ characters) used to create the fixed admin account (`alimukhtar@veltrio.com`). |
@@ -62,7 +63,9 @@ npm run db:generate       # write a new drizzle/NNNN_*.sql migration
 npm run db:migrate        # apply pending migrations (safe to re-run)
 ```
 
-`npm run db:migrate` runs `scripts/db-migrate.ts`, which applies only the migrations that have not been recorded yet (tracked in `drizzle.__drizzle_migrations`). It is idempotent, so it is safe to run on every deploy. If the tables already exist but no migrations are recorded (e.g. they were created earlier with `drizzle-kit push`), it baselines the initial migration instead of re-running it.
+`npm run db:migrate` runs `scripts/db-migrate.ts`, which applies migrations not yet recorded in `drizzle.__drizzle_migrations`, using a database advisory lock and schema audit. If tables exist without migration records, the runner checks the complete initial schema before baselining; incomplete schemas are refused.
+
+On Vercel, preview builds skip migrations by default. To test schema changes, first configure separate preview `DATABASE_URL` and `DATABASE_URL_POOLED` values pointing to an isolated database, then set `ALLOW_PREVIEW_DB_MIGRATIONS=true` **only for preview**. This guard prevents preview DDL by default; it does **not** prevent a running preview from reading or changing whichever database its runtime credentials reference. Preview and development credentials must never point at production data. A preview without the required migration may not work until its isolated database is prepared. Production deployments and local manual migrations continue to run normally.
 
 For quick local iteration you can still use `npm run db:push` (`drizzle-kit push`), which diffs the schema against the database directly. If a push prompts interactively in a non-TTY environment, run `npx drizzle-kit push --force`. Prefer migrations for anything shared or production.
 
@@ -94,6 +97,9 @@ Display placements and the AdSense script are disabled. To show a directly sold 
 3. Set the environment variables above. For local mode, point `UPLOAD_DIR` at a persistent volume; for Vercel, set `STORAGE_PROVIDER=vercel_blob` and add the server-only `BLOB_READ_WRITE_TOKEN`.
 4. Apply the schema. On Vercel the build command runs `npm run db:migrate` before `next build`, so the database is migrated automatically on each deploy. On other hosts, run `npm run db:migrate` once against the production database (or wire it into your build/release step).
 5. Sign in at `/admin/login`, change the password, and generate a recovery code.
+6. Use separate preview and development databases and authentication settings before running previews. Provision encrypted database and media backups, practice restoring them into an isolated environment, and test rollback procedures before production releases.
+
+The [platform audit and roadmap](docs/PLATFORM_AUDIT_AND_ROADMAP.md) records verified functionality, launch blockers and remaining work. The [Mux 4K implementation plan](docs/MUX_4K_IMPLEMENTATION_PLAN.md) describes the chosen future streaming pipeline, credentials, costs and rollout gates. Its current server-side foundation is disabled and not connected to any route or player; setting variables alone does not enable uploads. A [GitHub Actions workflow template](docs/github-actions-checks.yml) is provided for static checks, unit tests, a dependency audit and a build against dummy configuration. It is not active until installed in `.github/workflows/` by an account with workflow permission, and it would not verify live auth, media uploads, playback or deployed services.
 
 ## Scripts
 
@@ -103,6 +109,7 @@ npm run build       # production build
 npm run start       # production server
 npm run lint        # ESLint
 npm run typecheck   # TypeScript, no emit
+npm run test:unit   # run the repository's unit tests
 npm run db:generate # generate a SQL migration from schema changes
 npm run db:migrate  # apply pending migrations (idempotent)
 npm run db:push     # diff schema straight into the database (local iteration)

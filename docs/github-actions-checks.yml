@@ -1,0 +1,32 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The build compiles without connecting to a production database or auth service.
+      DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test
+      DATABASE_URL_POOLED: postgresql://test:test@127.0.0.1:5432/test
+      NEON_AUTH_BASE_URL: https://example.invalid
+      NEON_AUTH_COOKIE_SECRET: dummy-ci-cookie-secret-32-characters-minimum
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm audit --audit-level=high
+      - run: npm run build

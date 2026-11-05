@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool, type PoolClient } from "pg";
 import { auditSnapshot, readSnapshot } from "./schema-audit";
+import { shouldRunMigrations } from "./migration-policy";
 
 // Applies the SQL migrations in ./drizzle to the database. Uses the DIRECT
 // (non-pooled) DATABASE_URL because migrations run DDL in a transaction and
@@ -15,6 +16,10 @@ import { auditSnapshot, readSnapshot } from "./schema-audit";
 // created/updated automatically on deploy (the Neon database starts empty).
 
 async function main() {
+  if (!shouldRunMigrations(process.env)) {
+    console.log("Preview migrations skipped. Configure a separate preview database before opting in; runtime database access is not isolated by this setting.");
+    return;
+  }
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error("DATABASE_URL is required for migrations. Use the direct (non-pooled) Neon connection string.");
