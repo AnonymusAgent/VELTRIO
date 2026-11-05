@@ -23,6 +23,12 @@ export function isMuxEnabled() {
   return !!muxReady();
 }
 
+/** Studio uploads are owned by the fixed admin, not a public creator account. */
+export function adminStreamOwner(adminId: number) {
+  if (!Number.isInteger(adminId) || adminId < 1) throw new HttpError(401, "Your session has expired. Please sign in again.");
+  return `admin:${adminId}`;
+}
+
 export function muxClient() {
   const config = muxReady();
   if (!config) throw new HttpError(503, "Video streaming is not configured yet.");

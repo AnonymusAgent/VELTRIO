@@ -17,7 +17,7 @@ async function json(response: Response) {
 type Phase = "idle" | "uploading" | "paused" | "processing" | "ready" | "error";
 type UploadRow = { id: string; status: string; durationSeconds?: number | null; error?: string | null; videoId?: number | null };
 
-export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boolean }) {
+export default function CreatorUpload({ signedPlayback, apiBase = "/api/mux", libraryHref = "/studio", libraryLabel = "Back to studio" }: { signedPlayback?: boolean; apiBase?: string; libraryHref?: string; libraryLabel?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -48,7 +48,7 @@ export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boo
     if (!file || phase === "uploading") return;
     setError(""); setMessage(""); setProgress(0); setPhase("uploading");
     try {
-      const start = await json(await fetch("/api/mux/uploads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, title: file.name.replace(/\.[^.]+$/, "") }) }));
+      const start = await json(await fetch(`${apiBase}/uploads`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, title: file.name.replace(/\.[^.]+$/, "") }) }));
       setUploadId(start.id);
       const up = createUpload({ endpoint: start.url, file, chunkSize: 5120, attempts: 4, dynamicChunkSize: true });
       uploader.current = up;
@@ -63,12 +63,12 @@ export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boo
       setPhase("error");
       setError(uploadError instanceof Error ? uploadError.message : "Upload could not start.");
     }
-  }, [file, phase]);
+  }, [apiBase, file, phase]);
 
   async function poll(id: string) {
     if (pollTimer.current) clearTimeout(pollTimer.current);
     try {
-      const row: UploadRow = await json(await fetch(`/api/mux/uploads/${id}`, { cache: "no-store" }));
+      const row: UploadRow = await json(await fetch(`${apiBase}/uploads/${id}`, { cache: "no-store" }));
       setUploadRow(row);
       if (row.status === "ready") { setPhase("ready"); return; }
       if (row.status === "errored" || row.status === "cancelled") { setPhase("error"); setError(row.error || "Mux could not process this video."); return; }
@@ -81,7 +81,7 @@ export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boo
 
   function pause() { uploader.current?.pause(); setPhase("paused"); }
   function resume() { if (!uploader.current) { void startUpload(); return; } uploader.current.resume(); setPhase("uploading"); }
-  function abort() { uploader.current?.abort(); uploader.current = null; if (uploadId) fetch(`/api/mux/uploads/${uploadId}`, { method: "DELETE" }).catch(() => {}); setPhase("idle"); setProgress(0); setFile(null); setUploadId(""); setUploadRow(null); }
+  function abort() { uploader.current?.abort(); uploader.current = null; if (uploadId) fetch(`${apiBase}/uploads/${uploadId}`, { method: "DELETE" }).catch(() => {}); setPhase("idle"); setProgress(0); setFile(null); setUploadId(""); setUploadRow(null); }
   function reset() { abort(); setError(""); setMessage(""); setSlug(""); setPublishedFlag("draft"); }
 
   async function publish(event: React.FormEvent<HTMLFormElement>) {
@@ -91,7 +91,7 @@ export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boo
     if (status === "published" && form.get("rightsConfirmed") !== "on") { setError("Confirm you own or are licensed to publish this video before publishing."); return; }
     setMessage(""); setError(""); setPhase("processing");
     try {
-      const saved = await json(await fetch("/api/mux/videos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      const saved = await json(await fetch(`${apiBase}/videos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         uploadId,
         title: form.get("title"), description: form.get("description"), categorySlug: form.get("categorySlug"),
         status, rightsConfirmed: form.get("rightsConfirmed") === "on",
@@ -167,7 +167,7 @@ export default function CreatorUpload({ signedPlayback }: { signedPlayback?: boo
         </div>
       </form>}
 
-      {message && <div className="upload-success" role="status"><CheckCircle2 size={26} /><div><strong>{message}</strong><p>{published ? "Your audience can watch it now." : "It is saved as a draft in your studio."}</p><div className="upload-success-links">{slug && published && <Link className="vh-button small" href={`/video/${slug}`}>Watch video</Link>}{slug && !published && <Link className="vh-button small secondary" href="/studio">Open studio</Link>}<Link className="vh-button secondary small" href="/studio">Back to studio</Link></div></div></div>}
+      {message && <div className="upload-success" role="status"><CheckCircle2 size={26} /><div><strong>{message}</strong><p>{published ? "Your audience can watch it now." : "It is saved as a draft in your library."}</p><div className="upload-success-links">{slug && published && <Link className="vh-button small" href={`/video/${slug}`}>Watch video</Link>}{slug && !published && <Link className="vh-button small secondary" href={libraryHref}>Open library</Link>}<Link className="vh-button secondary small" href={libraryHref}>{libraryLabel}</Link></div></div></div>}
     </section>
 
     <aside className="studio-upload-aside">

@@ -1,9 +1,9 @@
-/* Public appearance controls. Admin remains in its original, separate dark theme. */
+/* Shared appearance controls. Admin follows the same light/dark preference. */
 .theme-toggle{display:grid;place-items:center;flex:none;width:36px;height:36px;border:1px solid #343750;border-radius:9px;background:#191b2a;color:#d3cfff}
 .theme-toggle:hover{background:#292b40;color:#fff}
 @media(max-width:480px){.theme-toggle{width:36px;height:36px}.public-header-inner{gap:7px}}
 
-html[data-theme="light"] body:has(.public-app){color-scheme:light;--bg:#f7f7fb;--panel:#fff;--panel-hover:#f2f1fa;--line:#e2e2ec;--muted:#626578;--accent:#6654d8;--accent-soft:#007e7b;background:var(--bg);color:#202232}
+html[data-theme="light"] body:has(.public-app){color-scheme:light;--bg:#f7f7fb;--panel:#fff;--panel-hover:#f2f1fa;--line:#e2e2ec;--muted:#3e3d52;--accent:#6654d8;--accent-soft:#007e7b;background:var(--bg);color:#17161f}
 html[data-theme="light"] .public-header{background:#fff;border-color:#e7e7ef}
 html[data-theme="light"] .public-app .brand-wordmark{color:#202232}
 html[data-theme="light"] .public-nav{color:#5e6073}
