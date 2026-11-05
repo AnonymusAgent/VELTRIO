@@ -57,7 +57,20 @@ async function main() {
   } });
   const id = "f02a2987-7a9b-4c32-9412-773406512e15";
   await createMuxDirectUpload(client, { ...config, maxResolution: "2160p" }, id);
-  assert.deepEqual((sent as { new_asset_settings: unknown }).new_asset_settings, { playback_policies: ["signed"], video_quality: "basic", max_resolution_tier: "2160p", passthrough: id, meta: { external_id: id } });
+  assert.deepEqual((sent as { new_asset_settings: unknown }).new_asset_settings, { playback_policies: ["signed"], max_resolution_tier: "2160p", passthrough: id, meta: { external_id: id } });
+  // A plan that rejects the resolution cap must not fail the upload: retry with
+  // minimal settings so trial accounts can still stream.
+  const attempts: Record<string, unknown>[] = [];
+  const pickyClient = new Mux({ tokenId: config.tokenId, tokenSecret: config.tokenSecret, maxRetries: 0, fetch: async (_input, init) => {
+    const payload = JSON.parse(String(init?.body));
+    attempts.push(payload);
+    if (attempts.length === 1) return new Response(JSON.stringify({ error: { type: "invalid_params", messages: ["max_resolution_tier is not available on your plan"] } }), { status: 400, headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ data: { id: "upload-id", url: "https://upload.example/token", status: "waiting", timeout: 3600, cors_origin: config.corsOrigin } }), { status: 201, headers: { "content-type": "application/json" } });
+  } });
+  const fallback = await createMuxDirectUpload(pickyClient, config, id);
+  assert.equal((fallback as unknown as { id?: string }).id, "upload-id");
+  assert.equal(attempts.length, 2);
+  assert.deepEqual(attempts[1].new_asset_settings, { playback_policies: ["signed"], passthrough: id, meta: { external_id: id } });
   await assert.rejects(() => createMuxDirectUpload(client, config, "invalid"), /upload ID/);
 
   // Playback tokens are RS256 JWTs with the playback ID as `sub`.
