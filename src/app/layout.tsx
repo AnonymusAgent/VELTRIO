@@ -14,6 +14,7 @@ import "./theme.css";
 import "./premium.css";
 import "./cinema.css";
 import "./admin.css";
+import "./stage.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
