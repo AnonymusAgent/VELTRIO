@@ -32,6 +32,24 @@ async function main() {
   assert.equal(canSignPlayback(unsignedConfig), false);
   assert.deepEqual(playbackPolicies(unsignedConfig), ["public"]);
 
+  // Credential probe classifies failures without ever echoing the token:
+  // 401/403 means the token pair is wrong; a bad host means Mux is unreachable.
+  const { probeMuxCredentials } = await import("../src/lib/mux-server");
+  const probeEnv = { MUX_TOKEN_ID: "probe-id", MUX_TOKEN_SECRET: "probe-secret", MUX_API_BASE_URL: "https://api.mux.test" };
+  const probeWith = async (status: number, body: unknown) => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+    try { return await probeMuxCredentials(probeEnv); } finally { globalThis.fetch = realFetch; }
+  };
+  assert.deepEqual(await probeMuxCredentials({}), { ok: false, reason: "not_configured" });
+  assert.deepEqual(await probeMuxCredentials({ MUX_TOKEN_ID: "id", MUX_TOKEN_SECRET: "secret", MUX_ENABLED: "false" }), { ok: false, reason: "not_configured" });
+  assert.deepEqual(await probeWith(401, { error: "unauthorized" }), { ok: false, reason: "credentials_rejected" });
+  assert.deepEqual(await probeWith(403, { error: "forbidden" }), { ok: false, reason: "credentials_rejected" });
+  assert.deepEqual(await probeWith(500, { error: "boom" }), { ok: false, reason: "request_failed" });
+  // A successful list proves the credentials work; the count is incidental.
+  const okProbe = await probeWith(200, { data: { id: "asset-1" } });
+  assert.equal(okProbe.ok, true);
+
   let sent: Record<string, unknown> | undefined;
   const client = new Mux({ tokenId: config.tokenId, tokenSecret: config.tokenSecret, webhookSecret: config.webhookSecret, maxRetries: 0, fetch: async (_input, init) => {
     sent = JSON.parse(String(init?.body));
