@@ -101,18 +101,23 @@ export function playbackPolicies(config: MuxConfig): ("signed" | "public")[] {
 
 export async function createMuxDirectUpload(client: Mux, config: MuxConfig, internalId: string) {
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(internalId)) throw new Error("Invalid internal upload ID.");
-  return client.video.uploads.create({
-    cors_origin: config.corsOrigin,
-    timeout: 3600,
-    test: config.test,
-    new_asset_settings: {
-      playback_policies: playbackPolicies(config),
-      video_quality: "basic",
-      max_resolution_tier: config.maxResolution,
-      passthrough: internalId,
-      meta: { external_id: internalId },
-    },
+  // Only plan-independent settings are sent. Rendition caps and quality levels
+  // are paid options: requesting them on a trial account fails the whole upload,
+  // so a rejection retries with the minimal asset settings instead.
+  const settings = (includeResolution: boolean) => ({
+    playback_policies: playbackPolicies(config),
+    ...(includeResolution ? { max_resolution_tier: config.maxResolution } : {}),
+    passthrough: internalId,
+    meta: { external_id: internalId },
   });
+  try {
+    return await client.video.uploads.create({ cors_origin: config.corsOrigin, timeout: 3600, test: config.test, new_asset_settings: settings(true) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (!/max_resolution_tier|resolution|paid|plan|not available|unsupported/i.test(message)) throw error;
+    console.warn("Mux rejected the resolution cap; retrying with default renditions:", message.slice(0, 160));
+    return client.video.uploads.create({ cors_origin: config.corsOrigin, timeout: 3600, test: config.test, new_asset_settings: settings(false) });
+  }
 }
 
 export type PlaybackClaims = {
