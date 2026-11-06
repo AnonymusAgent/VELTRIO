@@ -4,9 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Info, Play } from "lucide-react";
 import type { Video } from "@/lib/data";
-import { formatViews } from "@/lib/data";
+import { formatViews, releaseYear } from "@/lib/data";
 
-export type SpotlightItem = Pick<Video, "id" | "title" | "slug" | "description" | "thumbnail" | "category" | "duration" | "creator" | "views" | "muxPlaybackId">;
+export type SpotlightItem = Pick<Video, "id" | "title" | "slug" | "description" | "thumbnail" | "category" | "duration" | "creator" | "views" | "muxPlaybackId" | "publishedAt" | "isFeatured">;
 
 /**
  * Netflix-style billboard that rotates through featured stories every few
@@ -37,13 +37,13 @@ export default function HeroSpotlight({ items }: { items: SpotlightItem[] }) {
     <div className="billboard-grain" aria-hidden="true" />
 
     <div className="billboard-content site-container" key={active.id}>
-      <span className="billboard-badge"><i /> VELTRIO ORIGINAL</span>
+      <span className="billboard-badge"><i /> {active.isFeatured ? "FEATURED" : "NOW STREAMING"}</span>
       <h1 className="billboard-title">{active.title}</h1>
       <div className="billboard-meta">
-        <span className="billboard-match">98% match</span>
+        {releaseYear(active.publishedAt) && <span>{releaseYear(active.publishedAt)}</span>}
         <span>{active.category}</span>
         <span>{active.duration}</span>
-        <span className="billboard-views">{formatViews(active.views)} views</span>
+        {active.views > 0 && <span className="billboard-views">{formatViews(active.views)} views</span>}
       </div>
       <p className="billboard-copy">{active.description.slice(0, 190) || "An original story, streaming now on VELTRIO."}</p>
       <div className="billboard-actions">

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
  * it scrolls into view. Motion is disabled entirely for reduced-motion users and
  * JS-less renderers fall back to visible content.
  */
-export default function Reveal({ children, delay = 0, className = "", as: Tag = "div" }: { children: ReactNode; delay?: number; className?: string; as?: "div" | "section" | "li" }) {
+export default function Reveal({ children, delay = 0, className = "", id, as: Tag = "div" }: { children: ReactNode; delay?: number; className?: string; id?: string; as?: "div" | "section" | "li" }) {
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -20,5 +20,5 @@ export default function Reveal({ children, delay = 0, className = "", as: Tag = 
     if (reduced) observer.takeRecords();
     return () => observer.disconnect();
   }, []);
-  return <Tag ref={ref as never} className={`reveal${shown ? " is-in" : ""} ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</Tag>;
+  return <Tag ref={ref as never} id={id} className={`reveal${shown ? " is-in" : ""} ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</Tag>;
 }

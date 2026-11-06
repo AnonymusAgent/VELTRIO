@@ -1,0 +1,121 @@
+/* VELTRIO atelier — editorial finish on top of the cinematic stage.
+   Loaded last. It does not flatten the billboard or lighten the hero. */
+
+.public-app {
+  --ink: #07080c;
+  --ink-soft: #0c0d12;
+  --surface: #12131a;
+  background:
+    radial-gradient(900px 420px at 80% -10%, #1a1630 0%, transparent 55%),
+    var(--ink);
+}
+
+.public-app .brand-wordmark { font-size: clamp(18px, 1.5vw, 24px); letter-spacing: .22em; }
+.public-header .brand-logo-mark { width: 30px; height: 30px; }
+
+.billboard-badge {
+  color: #f3e6cf;
+  border-color: #f3e6cf55;
+  background: #07080ccc;
+}
+.billboard-copy { max-width: 36rem; color: #ddd8ea; }
+
+.shelf-kicker { color: #e7d3b0; letter-spacing: .22em; }
+.genre-tiles { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.video-player-shell { border-radius: 18px; border-color: #ffffff18; box-shadow: 0 30px 80px -36px #000; }
+.video-card-category { letter-spacing: .16em; color: #e7d3b0; }
+.video-card-creator { color: #c8c4d6; }
+
+.video-badge {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #07080ce6;
+  color: #f6ecdc;
+  border: 1px solid #f6ecdc44;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.video-badge-featured { color: #f3e6cf; }
+
+.manifesto-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.brand-manifesto h2 { font-size: clamp(32px, 4vw, 56px); letter-spacing: -.04em; max-width: 12ch; }
+
+.public-footer { padding: 56px 0 28px; background: #05060a; border-top: 1px solid #ffffff12; }
+.footer-top { display: grid; grid-template-columns: minmax(220px, 1.1fr) 2fr; gap: 40px; align-items: start; }
+.footer-brand p { margin: 10px 0 0; color: #b7b3c6; font-size: 14px; }
+.footer-support { color: #8f8aa3 !important; font-size: 13px !important; }
+.footer-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.footer-columns nav { display: flex; flex-direction: column; gap: 10px; }
+.footer-columns span { color: #f4f1ea; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 4px; }
+.footer-columns a { color: #b7b3c6; font-size: 14px; }
+.footer-columns a:hover { color: #fff; }
+.footer-bottom { display: flex; justify-content: space-between; gap: 16px; margin-top: 36px; padding-top: 18px; border-top: 1px solid #ffffff10; color: #8d89a0; font-size: 12px; letter-spacing: .08em; }
+
+.about-page { padding: 128px 0 80px; max-width: 980px; }
+.about-page h1 { font-family: "Outfit", sans-serif; font-size: clamp(40px, 6vw, 72px); line-height: .98; letter-spacing: -.04em; max-width: 14ch; }
+.about-lead { margin-top: 18px; max-width: 62ch; font-size: 18px; line-height: 1.6; color: var(--text-dim); }
+.about-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 36px; }
+.about-grid section { padding: 22px; border: 1px solid #ffffff14; border-radius: 18px; background: #101118; }
+.about-grid h2 { font-size: 16px; margin-bottom: 8px; }
+.about-grid p { color: #b7b3c6; font-size: 14px; line-height: 1.6; }
+.about-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+.watch-heading h1 { font-size: clamp(32px, 4vw, 52px); letter-spacing: -.04em; }
+.watch-description h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #e7d3b0; }
+.watch-description p { font-size: 15px; line-height: 1.7; color: #d7d3e4; }
+
+.browse-heading h1, .premium-page-heading h1 { letter-spacing: -.045em; }
+
+@media (max-width: 800px) {
+  .footer-top, .about-grid, .footer-columns { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; }
+  .public-app .brand-wordmark { font-size: 16px; letter-spacing: .16em; }
+}
+
+html[data-theme="light"] .public-app {
+  --ink: #f6f5f2;
+  --ink-soft: #fff;
+  --surface: #fff;
+  --text: #17171c;
+  --text-dim: #2c2b38;
+  --text-mute: #4a495c;
+  background: var(--ink);
+  color: var(--text);
+}
+html[data-theme="light"] .shelf-kicker,
+html[data-theme="light"] .video-card-category,
+html[data-theme="light"] .section-kicker { color: #6a4b24; }
+html[data-theme="light"] .video-card-creator,
+html[data-theme="light"] .public-app .video-tile-meta { color: #4e4d60; }
+html[data-theme="light"] .public-app .video-tile-info h3,
+html[data-theme="light"] .public-app .video-tile-info h3 a { color: #17171c; }
+html[data-theme="light"] .about-grid section { background: #fff; border-color: #e4e1d8; }
+html[data-theme="light"] .about-grid p,
+html[data-theme="light"] .about-lead { color: #3c3b4a; }
+html[data-theme="light"] .public-footer { background: #efece6; border-top-color: #e0dcd3; }
+html[data-theme="light"] .footer-columns span,
+html[data-theme="light"] .footer-bottom { color: #3c3b4a; }
+html[data-theme="light"] .footer-brand p,
+html[data-theme="light"] .footer-columns a,
+html[data-theme="light"] .footer-support { color: #4d4c5c !important; }
+html[data-theme="light"] .footer-columns a:hover { color: #111; }
+html[data-theme="light"] .watch-description h2 { color: #6a4b24; }
+html[data-theme="light"] .watch-description p { color: #2f2e3c; }
+html[data-theme="light"] .video-badge { background: #17171ce6; color: #f6ecdc; }
+
+/* Keep the hero cinematic in light mode. Do not wash the artwork. */
+html[data-theme="light"] .billboard-copy,
+html[data-theme="light"] .billboard-title,
+html[data-theme="light"] .billboard-meta,
+html[data-theme="light"] .billboard-credit,
+html[data-theme="light"] .billboard-credit strong { color: #f4f1ea; }
+html[data-theme="light"] .billboard-badge { color: #f3e6cf; }
+html[data-theme="light"] .brand-manifesto .shelf-kicker,
+html[data-theme="light"] .brand-manifesto h2,
+html[data-theme="light"] .brand-manifesto p { color: #f4f1ea; }
+html[data-theme="light"] .brand-manifesto .cta-info { color: #fff; }
