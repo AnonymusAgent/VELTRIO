@@ -17,6 +17,16 @@ export const CATEGORIES = [
 export function formatViews(n: number) {
   return Intl.NumberFormat("en", { notation: n >= 1000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n);
 }
+export function releaseYear(dateStr?: string | null) {
+  if (!dateStr) return "";
+  const year = new Date(dateStr).getFullYear();
+  return Number.isFinite(year) ? String(year) : "";
+}
+export function isRecentlyAdded(dateStr?: string | null, days = 21) {
+  if (!dateStr) return false;
+  const time = new Date(dateStr).getTime();
+  return Number.isFinite(time) && Date.now() - time < days * 86400000;
+}
 export function timeAgo(dateStr: string) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (!Number.isFinite(diff) || diff < 60) return "just now";

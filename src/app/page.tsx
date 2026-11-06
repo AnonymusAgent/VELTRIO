@@ -1,14 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Clapperboard, Compass, Globe2, Music2, Play, Sparkles, BookOpen, Users, Radio } from "lucide-react";
+import { BRAND_SUPPORT } from "@/lib/brand";
 import { CATEGORIES, type Video } from "@/lib/data";
-import { getAccountWatching, getPublicVideos, getPublicVideosBySlugs, isContinuing } from "@/lib/video-store";
+import { getAccountWatching, getPublicVideos, getPublicVideosBySlugs, isContinuing, type AccountWatch } from "@/lib/video-store";
 import { userAuth } from "@/lib/user-auth";
 import VideoCard from "@/components/VideoCard";
 import ContinueShelf from "@/components/ContinueShelf";
 import CinemaRail from "@/components/CinemaRail";
 import Reveal from "@/components/Reveal";
 import HeroSpotlight from "@/components/HeroSpotlight";
+import BecauseYouWatched from "@/components/BecauseYouWatched";
 
 export const dynamic = "force-dynamic";
 const icons = [Clapperboard, Compass, Music2, Globe2, Sparkles, BookOpen];
@@ -43,11 +45,12 @@ export default async function HomePage() {
   const billboard = (featured.length ? featured : trending.length ? trending : recent).slice(0, 5);
   const mostWatched = [...recent].sort((a, b) => b.views - a.views);
   const hasLibrary = recent.length > 0;
-  let accountContinue: { slug: string; position: number }[] = [];
+  let accountWatched: AccountWatch[] = [];
   try {
     const user = (await userAuth().getSession()).data?.user;
-    if (user?.id) accountContinue = (await getAccountWatching(user.id)).filter(isContinuing);
+    if (user?.id) accountWatched = await getAccountWatching(user.id);
   } catch { /* Signed-out viewing still uses this browser. */ }
+  const accountContinue = accountWatched.filter(isContinuing);
   let continueVideos = recent;
   if (!unavailable && accountContinue.length) {
     const known = new Set(recent.map(video => video.slug));
@@ -56,7 +59,6 @@ export default async function HomePage() {
       try { continueVideos = [...await getPublicVideosBySlugs(missing), ...recent]; } catch { /* Shelf still uses the loaded catalog. */ }
     }
   }
-
   return <div className="home-cinema">
     {!unavailable && billboard.length ? <HeroSpotlight items={billboard.map(item => ({ ...item, description: item.description || "" }))} /> : <section className="billboard billboard--static">
       <Image src="/images/veltrio-hero.jpg" alt="" fill priority sizes="100vw" className="billboard-art" />
@@ -64,7 +66,7 @@ export default async function HomePage() {
       <div className="billboard-content site-container">
         <span className="billboard-badge"><i /> WELCOME TO VELTRIO</span>
         <h1 className="billboard-title">Every story deserves<br />a <em>big screen.</em></h1>
-        <p className="billboard-copy">A streaming home for original films, music, travel and culture. Sign in to pick up where you left off.</p>
+        <p className="billboard-copy">{BRAND_SUPPORT} Films, music, travel and culture, streaming in HD.</p>
         <div className="billboard-actions">
           <Link href="/browse" className="cta cta-play"><Play size={17} fill="currentColor" /> Start watching</Link>
           <Link href="/account" className="cta cta-info">Sign in</Link>
@@ -78,10 +80,10 @@ export default async function HomePage() {
 
       {!unavailable && <>
         <ContinueShelf videos={continueVideos} accountContinue={accountContinue} />
-        <Shelf title="Trending now" kicker="WHAT EVERYONE'S WATCHING" href="/trending" videos={trending.filter(video => video.views > 0)} />
-        <Shelf title="New on VELTRIO" kicker="JUST ADDED" href="/browse" videos={recent.slice(0, 14)} />
-        <Shelf title="Top 10 today" kicker="THE CHARTS" href="/trending" videos={mostWatched.slice(0, 10)} ranked />
-        <Shelf title="VELTRIO spotlight" kicker="HAND-PICKED" description="Stories our editors think you'll love." href="/browse" videos={featured} />
+        <Shelf title="Featured on VELTRIO" kicker="HAND-PICKED" description="Stories chosen for the front of the house." href="/browse" videos={featured} />
+        <Shelf title="New and noteworthy" kicker="JUST ADDED" href="/browse" videos={recent.slice(0, 14)} />
+        <Shelf title="Trending now" kicker="DRAWING AN AUDIENCE" href="/trending" videos={trending.filter(video => video.views > 0)} />
+        <Shelf title="Most watched" kicker="THE CHARTS" href="/trending" videos={mostWatched.filter(video => video.views > 0).slice(0, 10)} ranked />
 
         {!hasLibrary && <Reveal as="section" className="first-upload">
           <div className="first-upload-copy">
@@ -93,32 +95,32 @@ export default async function HomePage() {
           <div className="first-upload-art" aria-hidden="true"><span /><span /><span /><Play size={26} fill="currentColor" /></div>
         </Reveal>}
 
-        <Reveal as="section" className="format-picks">
+        {CATEGORIES.some((_, index) => (categoryVideos[index] || []).length > 0) && <Reveal as="section" className="format-picks" id="categories">
           <div className="shelf-head"><div><span className="shelf-kicker">EVERY KIND OF STORY</span><h2>Browse by genre</h2></div><Link href="/browse" className="shelf-link">Explore all <ArrowRight size={14} /></Link></div>
-          <div className="genre-tiles">{CATEGORIES.map((category, index) => { const Icon = icons[index]; return <Link key={category.slug} href={`/category/${category.slug}`} className={`genre-tile genre-${index}`}>
+          <div className="genre-tiles">{CATEGORIES.map((category, index) => { const videos = categoryVideos[index] || []; if (!videos.length) return null; const Icon = icons[index]; return <Link key={category.slug} href={`/category/${category.slug}`} className={`genre-tile genre-${index}`}>
             <span className="genre-glow" aria-hidden="true" />
             <Icon size={22} strokeWidth={1.4} />
             <span className="genre-tile-name">{category.name}</span>
             <span className="genre-tile-note">{category.description}</span>
             <span className="genre-tile-go"><ArrowUpRight size={14} /></span>
           </Link>; })}</div>
-        </Reveal>
+        </Reveal>}
 
         {CATEGORIES.map((category, index) => <Shelf key={category.slug} title={category.name} href={`/category/${category.slug}`} videos={categoryVideos[index] || []} />)}
 
-        <Reveal as="section" className="platform-band">
+        <Reveal as="section" className="platform-band brand-manifesto">
           <div className="platform-band-inner">
-            <div><span className="shelf-kicker">MADE FOR WATCHING</span><h2>Press play. We’ll remember your place.</h2><p>Adaptive HD on every screen. Sign in and your watch history follows you — uploading stays with the publisher.</p></div>
+            <div><span className="shelf-kicker">{BRAND_SUPPORT.toUpperCase()}</span><h2>Your story belongs here.</h2><p>VELTRIO brings independent voices, original perspectives, and exceptional stories together in one destination.</p></div>
             <div className="platform-stats">
-              <div><Radio size={18} /><strong>Adaptive HD</strong><span>Auto quality up to 1080p</span></div>
-              <div><Sparkles size={18} /><strong>Instant start</strong><span>HLS streaming, no buffering</span></div>
-              <div><Users size={18} /><strong>Your account</strong><span>History saved when you sign in</span></div>
+              <div><Radio size={18} /><strong>Adaptive HD</strong><span>Sharp on a phone and a cinema screen</span></div>
+              <div><Sparkles size={18} /><strong>Editorial</strong><span>A catalog, not a feed of uploads</span></div>
+              <div><Users size={18} /><strong>Your account</strong><span>List and history follow you</span></div>
             </div>
           </div>
-          <Link href="/account" className="cta cta-play">Sign in to keep your place</Link>
+          <div className="manifesto-actions"><Link href="/browse" className="cta cta-play"><Play size={16} fill="currentColor" /> Explore stories</Link><Link href="/about" className="cta cta-info">About VELTRIO</Link></div>
         </Reveal>
 
-        {mostWatched.length > 0 && <Shelf title="Because you watched" kicker="KEEP EXPLORING" videos={mostWatched.slice(0, 14)} href="/browse" />}
+        <BecauseYouWatched videos={[...continueVideos, ...recent]} accountSlugs={accountWatched.map(item => item.slug)} />
       </>}
     </div>
   </div>;

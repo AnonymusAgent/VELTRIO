@@ -15,6 +15,7 @@ import "./premium.css";
 import "./cinema.css";
 import "./admin.css";
 import "./stage.css";
+import "./atelier.css";
 import AppChrome from "@/components/AppChrome";
 import BrandIntro from "@/components/BrandIntro";
 import AnalyticsConsent from "@/components/AnalyticsConsent";
@@ -29,7 +30,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: { default: `${BRAND_NAME} — ${BRAND_TAGLINE}`, template: `%s | ${BRAND_NAME}` },
-  description: `A streaming home for original stories. Explore films, travel, music and more on ${BRAND_NAME}. Sign in to save your list and watch history.`,
+  description: `Independent stories. One home. Explore films, travel, music and culture on ${BRAND_NAME}. Sign in to save your list and watch history.`,
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {

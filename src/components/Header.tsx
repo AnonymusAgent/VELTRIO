@@ -12,10 +12,12 @@ const links = [{ label: "Home", href: "/" }, { label: "Explore", href: "/browse"
 
 export default function Header() {
   const path = usePathname();
+  const overArt = path === "/";
   const [open, setOpen] = useState(false);
-  const [solid, setSolid] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const solid = !overArt || scrolled;
   useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
