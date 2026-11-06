@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, Clapperboard, Compass, Globe2, Music2, Play, Plus, Sparkles, BookOpen, Users, Radio, Upload } from "lucide-react";
-import { CATEGORIES, formatViews, type Video } from "@/lib/data";
-import { getPublicVideos } from "@/lib/video-store";
+import { ArrowRight, ArrowUpRight, Clapperboard, Compass, Globe2, Music2, Play, Sparkles, BookOpen, Users, Radio } from "lucide-react";
+import { CATEGORIES, type Video } from "@/lib/data";
+import { getAccountWatching, getPublicVideos, getPublicVideosBySlugs, isContinuing } from "@/lib/video-store";
+import { userAuth } from "@/lib/user-auth";
 import VideoCard from "@/components/VideoCard";
 import ContinueShelf from "@/components/ContinueShelf";
 import CinemaRail from "@/components/CinemaRail";
@@ -42,6 +43,19 @@ export default async function HomePage() {
   const billboard = (featured.length ? featured : trending.length ? trending : recent).slice(0, 5);
   const mostWatched = [...recent].sort((a, b) => b.views - a.views);
   const hasLibrary = recent.length > 0;
+  let accountContinue: { slug: string; position: number }[] = [];
+  try {
+    const user = (await userAuth().getSession()).data?.user;
+    if (user?.id) accountContinue = (await getAccountWatching(user.id)).filter(isContinuing);
+  } catch { /* Signed-out viewing still uses this browser. */ }
+  let continueVideos = recent;
+  if (!unavailable && accountContinue.length) {
+    const known = new Set(recent.map(video => video.slug));
+    const missing = accountContinue.map(item => item.slug).filter(slug => !known.has(slug));
+    if (missing.length) {
+      try { continueVideos = [...await getPublicVideosBySlugs(missing), ...recent]; } catch { /* Shelf still uses the loaded catalog. */ }
+    }
+  }
 
   return <div className="home-cinema">
     {!unavailable && billboard.length ? <HeroSpotlight items={billboard.map(item => ({ ...item, description: item.description || "" }))} /> : <section className="billboard billboard--static">
@@ -50,12 +64,12 @@ export default async function HomePage() {
       <div className="billboard-content site-container">
         <span className="billboard-badge"><i /> WELCOME TO VELTRIO</span>
         <h1 className="billboard-title">Every story deserves<br />a <em>big screen.</em></h1>
-        <p className="billboard-copy">A creator-first streaming home for original films, music, travel and culture — built for the people who make them.</p>
+        <p className="billboard-copy">A streaming home for original films, music, travel and culture. Sign in to pick up where you left off.</p>
         <div className="billboard-actions">
           <Link href="/browse" className="cta cta-play"><Play size={17} fill="currentColor" /> Start watching</Link>
-          <Link href="/studio/upload" className="cta cta-info"><Upload size={16} /> Upload your video</Link>
+          <Link href="/account" className="cta cta-info">Sign in</Link>
         </div>
-        <p className="billboard-credit">Stream in HD · Published by creators, curated by VELTRIO</p>
+        <p className="billboard-credit">Stream in HD · Titles added by VELTRIO</p>
       </div>
     </section>}
 
@@ -63,18 +77,18 @@ export default async function HomePage() {
       {unavailable && <div className="catalog-notice" role="status"><strong>We couldn’t load the library right now.</strong><span>The catalog is briefly unavailable. Your saved stories will be here when the service returns.</span><Link href="/browse">Try the library <ArrowRight size={15} /></Link></div>}
 
       {!unavailable && <>
-        <ContinueShelf videos={recent} />
+        <ContinueShelf videos={continueVideos} accountContinue={accountContinue} />
         <Shelf title="Trending now" kicker="WHAT EVERYONE'S WATCHING" href="/trending" videos={trending.filter(video => video.views > 0)} />
-        <Shelf title="New on VELTRIO" kicker="FRESHLY UPLOADED" href="/browse" videos={recent.slice(0, 14)} />
+        <Shelf title="New on VELTRIO" kicker="JUST ADDED" href="/browse" videos={recent.slice(0, 14)} />
         <Shelf title="Top 10 today" kicker="THE CHARTS" href="/trending" videos={mostWatched.slice(0, 10)} ranked />
         <Shelf title="VELTRIO spotlight" kicker="HAND-PICKED" description="Stories our editors think you'll love." href="/browse" videos={featured} />
 
         {!hasLibrary && <Reveal as="section" className="first-upload">
           <div className="first-upload-copy">
-            <span className="shelf-kicker">A SPACE FOR YOUR STORY</span>
-            <h2>The first upload could be yours.</h2>
-            <p>VELTRIO gives every creator a cinematic home: adaptive HD streaming, a real studio dashboard, and an audience that shows up for original work.</p>
-            <div className="first-upload-actions"><Link href="/studio/upload" className="cta cta-play"><Upload size={16} /> Upload a video</Link><Link href="/studio" className="cta cta-info">Open creator studio <ArrowUpRight size={15} /></Link></div>
+            <span className="shelf-kicker">THE LIBRARY</span>
+            <h2>New titles are on the way.</h2>
+            <p>VELTRIO is a streaming catalog. The publisher adds every title. Sign in to keep your place and build a list.</p>
+            <div className="first-upload-actions"><Link href="/browse" className="cta cta-play"><Play size={16} fill="currentColor" /> Browse the catalog</Link><Link href="/account" className="cta cta-info">Sign in <ArrowUpRight size={15} /></Link></div>
           </div>
           <div className="first-upload-art" aria-hidden="true"><span /><span /><span /><Play size={26} fill="currentColor" /></div>
         </Reveal>}
@@ -94,14 +108,14 @@ export default async function HomePage() {
 
         <Reveal as="section" className="platform-band">
           <div className="platform-band-inner">
-            <div><span className="shelf-kicker">BUILT FOR CREATORS</span><h2>Upload once. Stream everywhere.</h2><p>Direct resumable uploads, automatic transcoding, and adaptive playback that looks sharp on a phone and a cinema screen.</p></div>
+            <div><span className="shelf-kicker">MADE FOR WATCHING</span><h2>Press play. We’ll remember your place.</h2><p>Adaptive HD on every screen. Sign in and your watch history follows you — uploading stays with the publisher.</p></div>
             <div className="platform-stats">
               <div><Radio size={18} /><strong>Adaptive HD</strong><span>Auto quality up to 1080p</span></div>
               <div><Sparkles size={18} /><strong>Instant start</strong><span>HLS streaming, no buffering</span></div>
-              <div><Users size={18} /><strong>Creator-first</strong><span>Your studio, your audience</span></div>
+              <div><Users size={18} /><strong>Your account</strong><span>History saved when you sign in</span></div>
             </div>
           </div>
-          <Link href="/studio/upload" className="cta cta-play"><Plus size={16} /> Start uploading</Link>
+          <Link href="/account" className="cta cta-play">Sign in to keep your place</Link>
         </Reveal>
 
         {mostWatched.length > 0 && <Shelf title="Because you watched" kicker="KEEP EXPLORING" videos={mostWatched.slice(0, 14)} href="/browse" />}

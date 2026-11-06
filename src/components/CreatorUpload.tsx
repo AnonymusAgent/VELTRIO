@@ -17,7 +17,7 @@ async function json(response: Response) {
 type Phase = "idle" | "uploading" | "paused" | "processing" | "ready" | "error";
 type UploadRow = { id: string; status: string; durationSeconds?: number | null; error?: string | null; videoId?: number | null };
 
-export default function CreatorUpload({ signedPlayback, apiBase = "/api/mux", libraryHref = "/studio", libraryLabel = "Back to studio" }: { signedPlayback?: boolean; apiBase?: string; libraryHref?: string; libraryLabel?: string }) {
+export default function CreatorUpload({ signedPlayback, apiBase = "/api/admin/mux", libraryHref = "/admin/videos", libraryLabel = "Back to library" }: { signedPlayback?: boolean; apiBase?: string; libraryHref?: string; libraryLabel?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);

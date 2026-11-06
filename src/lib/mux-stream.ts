@@ -53,7 +53,12 @@ export async function assertMuxQuota(userId: string, incomingBytes: number) {
  * Reserve a database row, then request one Mux direct upload URL. The row comes
  * first so a crash or a slow provider can never orphan a billable session.
  */
+function assertPublisher(userId: string) {
+  if (!userId.startsWith("admin:")) throw new HttpError(403, "Only the publisher can add titles.");
+}
+
 export async function startMuxUpload(userId: string, size: number, title?: string) {
+  assertPublisher(userId);
   const { config, client } = muxClient();
   await assertMuxQuota(userId, size);
   const id = randomUUID();
@@ -149,6 +154,7 @@ export type PublishDetails = { title: string; description: string; categorySlug:
  * updates the existing row instead of creating duplicates.
  */
 export async function publishMuxVideo(user: { id: string; name?: string | null }, uploadId: string, details: PublishDetails) {
+  assertPublisher(user.id);
   const row = await ownedMuxUpload(uploadId, user.id);
   const synced = await syncMuxUpload(row);
   if (synced.status === "errored" || synced.status === "cancelled") throw new HttpError(409, synced.error || "This upload failed and cannot be published. Start a new upload.");

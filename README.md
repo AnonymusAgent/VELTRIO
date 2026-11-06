@@ -8,7 +8,7 @@ A cinematic, Netflix-inspired video platform with a private admin studio for upl
 - **Private admin studio** at `/admin` — dashboard, direct uploads with progress, thumbnail handling, library management, publishing controls, and account settings.
 - **Direct uploads** — videos use the configured local-volume or Vercel Blob provider and play back through the authenticated media proxy with HTTP range requests (seeking works). No Telegram, TeraBox, or third-party imports.
 - **User accounts** — Neon Auth / Better Auth email sign-up and sign-in at `/account`, profile menu and account settings at `/settings/account`. The admin login remains separate. Viewing and privacy preferences are available to everyone at `/settings` and are stored in the browser.
-- **Creator studio** — `/studio` lists each signed-in creator’s own videos and views, with local filesystem uploads, thumbnails, metadata editing, publishing and deletion. Earnings are marked unavailable until a real monetization and payout system is implemented.
+- **Viewer accounts** — signed-in viewers can save watch history to their account. My List stays on the browser. Viewers cannot upload. `/studio` and `/studio/upload` redirect to My List.
 - **First-party analytics** — opt-in public page views and playback events in the admin overview. The last 30 days of page views exclude query strings and IP addresses; counts are estimates and exclude people who decline analytics. Playback totals are all-time and may include events recorded by older versions before consent was introduced; older watch-time measurements are not directly comparable to the new incremental measurements.
 - **Admin authentication** — scrypt password hashing, database-backed sessions, HTTP-only cookies, login throttling, and a recovery-code password reset.
 - **Optional first-party pre-roll** — a configured sponsor video can play before a video, with a skip control and a fallback if the clip fails. No display ad slots or ad-network SDK are loaded.
@@ -51,7 +51,7 @@ There is one fixed admin account, `alimukhtar@veltrio.com` (hardcoded in `src/li
 | `VIDEO_PREROLL_PATH` | no | Root-relative path to a licensed MP4/WebM deployed under `public/` (for example `/sponsors/promo.mp4`). Blank disables pre-roll. |
 | `NEXT_PUBLIC_ADSENSE_CLIENT` | no | Legacy publisher ID used only to generate `/ads.txt`; it does not enable ads. |
 
-See `.env.example` for the full list. Apply migrations before enabling creator uploads or analytics. Creator uploads currently support only `STORAGE_PROVIDER=local` and require persistent storage; Vercel Blob creator uploads are not yet supported. User signup, upload, and playback must be tested against your configured Neon Auth instance and PostgreSQL database before deployment. The creator studio does not yet provide payouts, account-synced lists/subscriptions, or the full feature set of YouTube. Creator uploads are blocked on Vercel until a suitable durable upload backend is implemented. Before opening uploads to the public, add per-user quotas, abuse controls, content moderation, operational monitoring, and cleanup for unattached finalized creator assets.
+See `.env.example` for the full list. Apply migrations before enabling admin uploads or analytics. Public viewers cannot upload. Only the admin studio publishes titles. User signup, playback, and signed-in watch history must be tested against your configured Neon Auth instance and PostgreSQL database before deployment.
 
 ## Database
 
@@ -103,7 +103,7 @@ The [platform audit and roadmap](docs/PLATFORM_AUDIT_AND_ROADMAP.md) records ver
 
 ### Streaming uploads (Mux)
 
-Creator uploads stream through Mux, so the app needs no writable disk in production. Set `MUX_ENABLED=true` with `MUX_TOKEN_ID` + `MUX_TOKEN_SECRET` from a Mux environment; browsers then upload straight to Mux over a resumable connection, and portrait, thumbnail and playback URLs are served from Veltrio routes.
+Publisher uploads stream through Mux from the admin studio, so the app needs no writable disk in production. Set `MUX_ENABLED=true` with `MUX_TOKEN_ID` + `MUX_TOKEN_SECRET` from a Mux environment; the admin browser then uploads straight to Mux over a resumable connection, and portrait, thumbnail and playback URLs are served from Veltrio routes. Public `/api/mux/uploads` and `/api/creator/*` routes refuse viewer uploads.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |

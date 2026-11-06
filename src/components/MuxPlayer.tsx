@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import MuxPlayerReact from "@mux/mux-player-react";
 import { CircleAlert, PictureInPicture2, RotateCcw, Settings2 } from "lucide-react";
 import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
+import { pullAccountProgress } from "@/lib/account-progress";
 
 export type StreamInfo = { url: string; token: string | null; expiresAt: string | null };
 
@@ -89,6 +90,18 @@ export default function MuxPlayer({ slug, title, playbackId, stream, poster, dur
     fetch(`/api/videos/${slug}/view`, { method: "POST" }).catch(() => {});
     recordEvent("play");
   }, [recordEvent, slug, updateList]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullAccountProgress(slug).then(position => {
+      if (cancelled || !position || !resumeEnabled) return;
+      const element = playerRef.current;
+      if (element && element.currentTime < 1) {
+        try { element.currentTime = position; } catch { /* not seekable yet */ }
+      }
+    });
+    return () => { cancelled = true; };
+  }, [slug, resumeEnabled]);
 
   useEffect(() => {
     const element = playerRef.current;

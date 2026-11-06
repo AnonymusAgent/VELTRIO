@@ -4,6 +4,7 @@ import { CircleAlert, Gauge, PictureInPicture2, RotateCcw } from "lucide-react";
 import type { Video } from "@/lib/data";
 import InStreamPreroll from "./InStreamPreroll";
 import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
+import { postWatchProgress, pullAccountProgress } from "@/lib/account-progress";
 
 type VideoElementWithPip = HTMLVideoElement & { requestPictureInPicture?: () => Promise<unknown> };
 
@@ -38,7 +39,16 @@ export default function VideoPlayer({ video, prerollPath }: { video: Video; prer
     lastSaved.current = currentTime;
     writeLocalStorage(progressKey, String(Math.floor(currentTime)));
     updateList("vh-continue-watching", true);
+    postWatchProgress(video.slug, currentTime);
   }
+  useEffect(() => {
+    let cancelled = false;
+    void pullAccountProgress(video.slug).then(position => {
+      if (cancelled || !position || !resumeEnabled || !videoRef.current || videoRef.current.currentTime > 1) return;
+      try { videoRef.current.currentTime = position; } catch { /* not seekable yet */ }
+    });
+    return () => { cancelled = true; };
+  }, [video.slug, resumeEnabled]);
   function recordEvent(kind: "play" | "progress" | "complete", watchSeconds = 0) {
     fetch(`/api/videos/${video.slug}/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, watchSeconds }) }).catch(() => {});
   }
@@ -97,7 +107,7 @@ export default function VideoPlayer({ video, prerollPath }: { video: Video; prer
         if (event.key.toLowerCase() === "j") { event.preventDefault(); player.currentTime = Math.max(0, player.currentTime - 10); }
         if (event.key.toLowerCase() === "l") { event.preventDefault(); player.currentTime = Math.min(player.duration || Infinity, player.currentTime + 10); }
         if (event.key.toLowerCase() === "f" && player.requestFullscreen) { event.preventDefault(); void player.requestFullscreen().catch(() => {}); }
-      }} className="aspect-video w-full bg-black object-contain" onLoadedMetadata={handleMetadata} onPlaying={countView} onTimeUpdate={event => { if (!event.currentTarget.paused && lastTick.current !== null) tickWatch(); saveProgress(event.currentTarget.currentTime); }} onPause={event => { if (!event.currentTarget.ended) saveProgress(event.currentTarget.currentTime); flushWatch("progress"); }} onEnded={() => { writeLocalStorage(progressKey, "0"); updateList("vh-continue-watching", false); flushWatch("complete"); }} onError={() => setError(true)} aria-label={video.title}>Your browser does not support HTML5 video.</video>
+      }} className="aspect-video w-full bg-black object-contain" onLoadedMetadata={handleMetadata} onPlaying={countView} onTimeUpdate={event => { if (!event.currentTarget.paused && lastTick.current !== null) tickWatch(); saveProgress(event.currentTarget.currentTime); }} onPause={event => { if (!event.currentTarget.ended) saveProgress(event.currentTarget.currentTime); flushWatch("progress"); }} onEnded={() => { postWatchProgress(video.slug, lastSaved.current || video.durationSeconds || 1); writeLocalStorage(progressKey, "0"); updateList("vh-continue-watching", false); flushWatch("complete"); }} onError={() => setError(true)} aria-label={video.title}>Your browser does not support HTML5 video.</video>
       {prerollFinished && hasResume && !resumeDismissed && <div className="video-resume-prompt" role="status"><RotateCcw size={14} /><span>Continue from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}?</span><button type="button" onClick={() => setResumeDismissed(true)}>Continue</button><button type="button" aria-label="Restart video" onClick={restart}>Restart</button></div>}
     </div>
     <div className="video-player-tools" aria-label="Player options" hidden={!prerollFinished}>

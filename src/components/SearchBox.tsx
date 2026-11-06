@@ -28,5 +28,5 @@ export default function SearchBox() {
     const term = query.trim();
     if (term) writeLocalStorage("vh-search-history", JSON.stringify([term, ...history.filter(v => v.toLowerCase() !== term.toLowerCase())].slice(0, 5)));
   }
-  return <form action="/search" className="header-search" role="search" onSubmit={remember}><Search size={16} /><input name="q" aria-label="Search videos" placeholder="Search stories, creators..." autoComplete="off" list={id} value={query} onChange={e => setQuery(e.target.value)} maxLength={160} /><datalist id={id}>{suggestions.map(value => <option key={value} value={value} />)}</datalist>{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><X size={14} /></button>}</form>;
+  return <form action="/search" className="header-search" role="search" onSubmit={remember}><Search size={16} /><input name="q" aria-label="Search videos" placeholder="Search stories..." autoComplete="off" list={id} value={query} onChange={e => setQuery(e.target.value)} maxLength={160} /><datalist id={id}>{suggestions.map(value => <option key={value} value={value} />)}</datalist>{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><X size={14} /></button>}</form>;
 }
