@@ -11,7 +11,7 @@ export default function AccountPage() {
       <p>Sign in to save your watch history. Titles are added by VELTRIO — your account is for watching, not uploading.</p>
       <ul className="auth-points">
         <li><Play size={15} /> Watch the catalog in adaptive HD</li>
-        <li><Bookmark size={15} /> Save titles to My List on this browser</li>
+        <li><Bookmark size={15} /> My List follows your account</li>
         <li><Sparkles size={15} /> Playback position follows your account</li>
       </ul>
       <div className="auth-mark"><BrandMark className="auth-mark-svg" /><span>VELTRIO</span></div>

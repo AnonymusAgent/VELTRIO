@@ -243,3 +243,14 @@ export const watchProgress = pgTable("watch_progress", {
   userVideoIdx: uniqueIndex("watch_progress_user_video_idx").on(table.userId, table.videoId),
   userUpdatedIdx: index("watch_progress_user_updated_idx").on(table.userId, table.updatedAt),
 }));
+
+// Titles a signed-in viewer saved to My List. Signed-out saves stay in the browser.
+export const savedTitles = pgTable("saved_titles", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  videoId: integer("video_id").notNull().references(() => videos.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  userVideoIdx: uniqueIndex("saved_titles_user_video_idx").on(table.userId, table.videoId),
+  userCreatedIdx: index("saved_titles_user_created_idx").on(table.userId, table.createdAt),
+}));

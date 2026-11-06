@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Bookmark, Check, Download, Heart, Share2 } from "lucide-react";
 import { formatViews, type Video } from "@/lib/data";
 import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
+import { postSavedTitle } from "@/lib/account-list";
 export default function VideoActions({ video }: { video: Video }) {
   const [likes, setLikes] = useState(video.likes);
   const [shared, setShared] = useState(false);
@@ -33,8 +34,9 @@ export default function VideoActions({ video }: { video: Video }) {
   }
   function save() {
     setMessage("");
-    const next = saved ? savedSlugs.filter(slug => slug !== video.slug) : [...savedSlugs, video.slug];
-    if (!writeLocalStorage("saved-videos", JSON.stringify(next))) setMessage("Browser storage is disabled. Enable it to save videos to My list.");
+    const next = saved ? savedSlugs.filter(slug => slug !== video.slug) : [video.slug, ...savedSlugs];
+    if (!writeLocalStorage("saved-videos", JSON.stringify(next.slice(0, 100)))) setMessage("Browser storage is disabled. Enable it to save videos to My list.");
+    else postSavedTitle(video.slug, !saved);
   }
   return <><button onClick={like} disabled={liked || busy} className={`vh-button secondary small ${liked ? "!border-[#7f4747] !text-[#a99bff]" : ""}`}><Heart size={13} className={liked ? "fill-current" : ""} />{formatViews(likes)}{liked ? " · Liked" : ""}</button><button onClick={share} className="vh-button secondary small">{shared ? <Check size={13} /> : <Share2 size={13} />}{shared ? "Link copied" : "Share"}</button><button onClick={save} className={`vh-button secondary small ${saved ? "!text-[#ffd0a7]" : ""}`}><Bookmark size={13} className={saved ? "fill-current" : ""} />{saved ? "Saved" : "Save"}</button>{video.videoUrl && <a href={`${video.videoUrl}${video.videoUrl.includes("?") ? "&" : "?"}download=1`} download className="vh-button secondary small"><Download size={13} /> Download</a>}{message && <p className="w-full text-xs text-amber-300" role="status">{message}</p>}</>;
 }
