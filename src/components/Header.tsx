@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, Plus, Search, X } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 import { BrandLogo } from "./Brand";
 import ProfileMenu from "./ProfileMenu";
 import ThemeToggle from "./ThemeToggle";
@@ -31,12 +31,10 @@ export default function Header() {
       <BrandLogo />
       <nav id="public-navigation" className={open ? "public-nav is-open" : "public-nav"} aria-label="Main navigation">
         {links.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={path === item.href ? "active" : ""} aria-current={path === item.href ? "page" : undefined}>{item.label}</Link>)}
-        <Link href="/studio" className="mobile-studio-link" onClick={() => setOpen(false)}>Creator studio</Link>
       </nav>
       <div className="header-actions">
         <SearchBox />
         <Link href="/search" className="mobile-search" aria-label="Search videos"><Search size={18} /></Link>
-        <Link href="/studio/upload" className="upload-cta"><Plus size={15} strokeWidth={2.6} /><span>Upload</span></Link>
         <ProfileMenu />
         <ThemeToggle />
         <button type="button" className="mobile-menu icon-button" onClick={() => setOpen(current => !current)} aria-expanded={open} aria-controls="public-navigation" aria-label={open ? "Close menu" : "Open menu"}>{open ? <X size={18} /> : <Menu size={18} />}</button>

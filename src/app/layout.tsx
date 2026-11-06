@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: { default: `${BRAND_NAME} — ${BRAND_TAGLINE}`, template: `%s | ${BRAND_NAME}` },
-  description: `A home for original stories worth watching. Explore films, travel, music and more, uploaded and published directly on ${BRAND_NAME}.`,
+  description: `A streaming home for original stories. Explore films, travel, music and more on ${BRAND_NAME}. Sign in to save your watch history.`,
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 export default function RootLayout({ children }: { children: ReactNode }) {

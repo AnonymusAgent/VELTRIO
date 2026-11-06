@@ -6,10 +6,11 @@ import { CATEGORIES, type Video } from "@/lib/data";
 import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/browser-storage";
 import VideoCard from "./VideoCard";
 
-type Props = { videos: Video[]; initialCategory?: string; initialQuery?: string; initialTotal?: number; savedOnly?: boolean; popular?: boolean; searchPage?: boolean };
+const NO_ACCOUNT: string[] = [];
+type Props = { videos: Video[]; initialCategory?: string; initialQuery?: string; initialTotal?: number; savedOnly?: boolean; popular?: boolean; searchPage?: boolean; accountHistory?: string[]; accountContinue?: string[] };
 type Tab = "saved" | "continue" | "history";
 function durationSeconds(duration: string) { return duration.split(":").reduce((total, part) => total * 60 + (Number(part) || 0), 0); }
-export default function VideoBrowser({ videos, initialCategory = "all", initialQuery = "", initialTotal, savedOnly = false, popular = false, searchPage = false }: Props) {
+export default function VideoBrowser({ videos, initialCategory = "all", initialQuery = "", initialTotal, savedOnly = false, popular = false, searchPage = false, accountHistory = NO_ACCOUNT, accountContinue = NO_ACCOUNT }: Props) {
   const searchListId = useId();
   const searchHistory = parseSavedSlugs(useLocalStorageValue("vh-search-history"));
   const [category, setCategory] = useState(initialCategory);
@@ -22,10 +23,11 @@ export default function VideoBrowser({ videos, initialCategory = "all", initialQ
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [hideAccountHistory, setHideAccountHistory] = useState(false);
   const initialRender = useRef(true);
   const saved = parseSavedSlugs(useLocalStorageValue("saved-videos"));
-  const history = parseSavedSlugs(useLocalStorageValue("vh-watch-history"));
-  const continuing = parseSavedSlugs(useLocalStorageValue("vh-continue-watching"));
+  const localHistory = parseSavedSlugs(useLocalStorageValue("vh-watch-history"));
+  const localContinuing = parseSavedSlugs(useLocalStorageValue("vh-continue-watching"));
   const moreRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -62,19 +64,23 @@ export default function VideoBrowser({ videos, initialCategory = "all", initialQ
   }
   const list = useMemo(() => {
     if (!savedOnly) return items;
+    const remembered = hideAccountHistory ? NO_ACCOUNT : accountHistory;
+    const resume = hideAccountHistory ? NO_ACCOUNT : accountContinue;
+    const history = [...remembered, ...localHistory.filter(slug => !remembered.includes(slug))];
+    const continuing = [...resume, ...localContinuing.filter(slug => !resume.includes(slug))];
     const chosen = tab === "saved" ? saved : tab === "continue" ? continuing : history;
     const q = query.trim().toLowerCase();
     return items.filter(video => chosen.includes(video.slug) && (category === "all" || video.categorySlug === category) && (!q || [video.title, video.description, video.creator || "", video.category].some(value => value.toLowerCase().includes(q)))).sort((a, b) => sort === "popular" ? b.views - a.views : sort === "duration" ? durationSeconds(b.duration) - durationSeconds(a.duration) : tab === "saved" ? new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime() : chosen.indexOf(a.slug) - chosen.indexOf(b.slug));
-  }, [items, saved, continuing, history, savedOnly, tab, category, query, sort]);
+  }, [items, saved, localContinuing, localHistory, accountContinue, accountHistory, hideAccountHistory, savedOnly, tab, category, query, sort]);
   const labels: Record<Tab, string> = { saved: "Saved videos", continue: "Continue watching", history: "Watch history" };
   const emptyTitle = query || category !== "all" ? "No stories match your filters." : savedOnly ? tab === "saved" ? "Your list is ready when you are." : tab === "continue" ? "Nothing to continue just yet." : "Your watch history starts here." : "Good stories take a little time.";
-  const emptyDescription = query || category !== "all" ? "Try a different search or choose another category." : savedOnly ? "Explore the library and find something worth watching. Your activity stays on this browser." : "This part of the library is waiting for its first upload. Come back for something worth watching.";
+  const emptyDescription = query || category !== "all" ? "Try a different search or choose another category." : savedOnly ? "Explore the catalog. Saved titles stay on this browser. Signed-in watch history follows your account." : "New titles are added by VELTRIO. Come back for something worth watching.";
   return <>
     {savedOnly && <div className="library-tabs" role="group" aria-label="Your library">{(Object.keys(labels) as Tab[]).map(value => <button key={value} type="button" className={tab === value ? "active" : ""} aria-pressed={tab === value} onClick={() => setTab(value)}>{labels[value]}</button>)}</div>}
-    <div className="catalog-toolbar"><form className="admin-search library-search" action="/search" onSubmit={event => { const term = query.trim(); if (term) writeLocalStorage("vh-search-history", JSON.stringify([term, ...searchHistory.filter(value => value.toLowerCase() !== term.toLowerCase())].slice(0, 5))); if (!searchPage) event.preventDefault(); }}><Search size={16} /><input placeholder={savedOnly ? "Search your library" : "Search titles, creators, categories..."} name="q" list={searchListId} value={query} onChange={event => setQuery(event.target.value)} aria-label="Search library" /><datalist id={searchListId}>{[...new Set([...searchHistory, ...items.map(v => v.title)])].filter(value => value.toLowerCase().includes(query.toLowerCase())).slice(0, 8).map(value => <option key={value} value={value} />)}</datalist>{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear library search"><X size={15} /></button>}</form><select aria-label="Sort videos" value={sort} onChange={event => setSort(event.target.value)} className="vh-field library-sort"><option value="newest">Newest first</option><option value="popular">Most viewed</option><option value="duration">Longest first</option></select></div>
+    <div className="catalog-toolbar"><form className="admin-search library-search" action="/search" onSubmit={event => { const term = query.trim(); if (term) writeLocalStorage("vh-search-history", JSON.stringify([term, ...searchHistory.filter(value => value.toLowerCase() !== term.toLowerCase())].slice(0, 5))); if (!searchPage) event.preventDefault(); }}><Search size={16} /><input placeholder={savedOnly ? "Search your library" : "Search titles and categories..."} name="q" list={searchListId} value={query} onChange={event => setQuery(event.target.value)} aria-label="Search library" /><datalist id={searchListId}>{[...new Set([...searchHistory, ...items.map(v => v.title)])].filter(value => value.toLowerCase().includes(query.toLowerCase())).slice(0, 8).map(value => <option key={value} value={value} />)}</datalist>{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear library search"><X size={15} /></button>}</form><select aria-label="Sort videos" value={sort} onChange={event => setSort(event.target.value)} className="vh-field library-sort"><option value="newest">Newest first</option><option value="popular">Most viewed</option><option value="duration">Longest first</option></select></div>
     <div className="catalog-toolbar category-filters" aria-label="Filter by category"><button type="button" onClick={() => setCategory("all")} aria-pressed={category === "all"} className={`filter-chip ${category === "all" ? "active" : ""}`}>All stories</button>{CATEGORIES.map(c => <button type="button" key={c.slug} onClick={() => setCategory(c.slug)} aria-pressed={category === c.slug} className={`filter-chip ${category === c.slug ? "active" : ""}`}>{c.name}</button>)}</div>
     {error && <div className="form-message mb-5" role="alert">{error} <button type="button" onClick={() => setRetry(value => value + 1)} className="underline">Try again</button></div>}
-    <div className="library-count" aria-live="polite">{loading && <LoaderCircle size={13} className="animate-spin" />}<span>{list.length} {list.length === 1 ? "story" : "stories"}{savedOnly ? "" : ` of ${total}`}</span>{savedOnly && tab === "history" && history.length > 0 && <button type="button" onClick={() => writeLocalStorage("vh-watch-history", "[]")}>Clear history</button>}</div>
-    {list.length ? <><div className="video-grid">{list.map(video => <VideoCard video={video} key={video.id} />)}</div>{!savedOnly && items.length < total && <div className="mt-10 flex justify-center"><button type="button" onClick={loadMore} disabled={loadingMore || loading} className="vh-button secondary small">{loadingMore && <LoaderCircle size={13} className="animate-spin" />}{loadingMore ? "Loading stories…" : "Load more stories"}<ArrowRight size={13} /></button></div>}</> : !error && <div className="vh-panel empty-state library-empty"><div className="empty-icon"><Film size={26} /></div><h3>{emptyTitle}</h3><p>{emptyDescription}</p><Link className="vh-button secondary small" href={savedOnly ? "/browse" : "/studio"}>{savedOnly ? "Explore videos" : "Open creator studio"}<ArrowRight size={13} /></Link></div>}
+    <div className="library-count" aria-live="polite">{loading && <LoaderCircle size={13} className="animate-spin" />}<span>{list.length} {list.length === 1 ? "story" : "stories"}{savedOnly ? "" : ` of ${total}`}</span>{savedOnly && tab === "history" && (localHistory.length > 0 || (!hideAccountHistory && accountHistory.length > 0)) && <button type="button" onClick={() => { writeLocalStorage("vh-watch-history", "[]"); setHideAccountHistory(true); fetch("/api/me/history", { method: "DELETE" }).catch(() => {}); }}>Clear history</button>}</div>
+    {list.length ? <><div className="video-grid">{list.map(video => <VideoCard video={video} key={video.id} />)}</div>{!savedOnly && items.length < total && <div className="mt-10 flex justify-center"><button type="button" onClick={loadMore} disabled={loadingMore || loading} className="vh-button secondary small">{loadingMore && <LoaderCircle size={13} className="animate-spin" />}{loadingMore ? "Loading stories…" : "Load more stories"}<ArrowRight size={13} /></button></div>}</> : !error && <div className="vh-panel empty-state library-empty"><div className="empty-icon"><Film size={26} /></div><h3>{emptyTitle}</h3><p>{emptyDescription}</p><Link className="vh-button secondary small" href="/browse">Explore the catalog<ArrowRight size={13} /></Link></div>}
   </>;
 }

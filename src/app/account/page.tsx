@@ -1,6 +1,6 @@
 import AccountForm from "@/components/AccountForm";
 import { BrandMark } from "@/components/Brand";
-import { Play, Sparkles, Upload } from "lucide-react";
+import { Bookmark, Play, Sparkles } from "lucide-react";
 export const metadata = { title: "Your account" };
 export default function AccountPage() {
   return <div className="auth-page"><div className="site-container auth-grid">
@@ -8,11 +8,11 @@ export default function AccountPage() {
       <div className="auth-story-glow" />
       <span className="shelf-kicker">WELCOME TO VELTRIO</span>
       <h1>Your seat in the <em>cinema.</em></h1>
-      <p>One account for watching, saving and uploading. Stories stream in adaptive HD, and your creator studio is one click away.</p>
+      <p>Sign in to save your watch history. Titles are added by VELTRIO — your account is for watching, not uploading.</p>
       <ul className="auth-points">
-        <li><Play size={15} /> Watch original films and creator uploads</li>
-        <li><Upload size={15} /> Publish your own videos with resumable uploads</li>
-        <li><Sparkles size={15} /> Keep your list and progress across devices</li>
+        <li><Play size={15} /> Watch the catalog in adaptive HD</li>
+        <li><Bookmark size={15} /> Save titles to My List on this browser</li>
+        <li><Sparkles size={15} /> Playback position follows your account</li>
       </ul>
       <div className="auth-mark"><BrandMark className="auth-mark-svg" /><span>VELTRIO</span></div>
     </section>

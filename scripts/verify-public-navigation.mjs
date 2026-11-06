@@ -18,12 +18,14 @@ for (const path of ["/account", "/privacy", "/adsense-setup"]) {
   const { response, html } = await get(path);
   assert.equal(response.status, 200, `${path} should load`);
   assert.match(html, /aria-label="Sign in or create an account" href="\/account"/);
-  assert.match(html, /href="\/studio"[^>]*>Creator studio/);
+  assert.match(html, /href="\/my-list"/);
+  assert.doesNotMatch(html, /href="\/studio/);
+  assert.doesNotMatch(html, /Creator studio|Upload your video|Start uploading/);
   assert.doesNotMatch(html, /href="\/admin(?:\/|"|\?)/, `${path} must not link to admin`);
 }
-for (const [path, destination] of [["/submit", "/studio/upload"], ["/telegram-setup", "/studio"], ["/studio", "/account"], ["/studio/upload", "/account"], ["/admin", "/admin/login"]]) {
+for (const [path, destination] of [["/submit", "/browse"], ["/telegram-setup", "/browse"], ["/studio", "/my-list"], ["/studio/upload", "/my-list"], ["/admin", "/admin/login"]]) {
   assert.ok(redirectsTo(await get(path), destination), `${path} should redirect to ${destination}`);
 }
 const adminLogin = await get("/admin/login");
 assert.equal(adminLogin.response.status, 200, "Admin sign-in should remain available by direct address");
-console.log("PASS: public sign-in and creator links are separate from the direct admin route.");
+console.log("PASS: public sign-in stays open, viewer uploads are closed, and admin remains a direct route.");
