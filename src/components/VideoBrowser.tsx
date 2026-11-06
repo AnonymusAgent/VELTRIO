@@ -7,10 +7,10 @@ import { parseSavedSlugs, useLocalStorageValue, writeLocalStorage } from "@/lib/
 import VideoCard from "./VideoCard";
 
 const NO_ACCOUNT: string[] = [];
-type Props = { videos: Video[]; initialCategory?: string; initialQuery?: string; initialTotal?: number; savedOnly?: boolean; popular?: boolean; searchPage?: boolean; accountHistory?: string[]; accountContinue?: string[] };
+type Props = { videos: Video[]; initialCategory?: string; initialQuery?: string; initialTotal?: number; savedOnly?: boolean; popular?: boolean; searchPage?: boolean; accountHistory?: string[]; accountContinue?: string[]; accountSaved?: string[] };
 type Tab = "saved" | "continue" | "history";
 function durationSeconds(duration: string) { return duration.split(":").reduce((total, part) => total * 60 + (Number(part) || 0), 0); }
-export default function VideoBrowser({ videos, initialCategory = "all", initialQuery = "", initialTotal, savedOnly = false, popular = false, searchPage = false, accountHistory = NO_ACCOUNT, accountContinue = NO_ACCOUNT }: Props) {
+export default function VideoBrowser({ videos, initialCategory = "all", initialQuery = "", initialTotal, savedOnly = false, popular = false, searchPage = false, accountHistory = NO_ACCOUNT, accountContinue = NO_ACCOUNT, accountSaved = NO_ACCOUNT }: Props) {
   const searchListId = useId();
   const searchHistory = parseSavedSlugs(useLocalStorageValue("vh-search-history"));
   const [category, setCategory] = useState(initialCategory);
@@ -25,7 +25,8 @@ export default function VideoBrowser({ videos, initialCategory = "all", initialQ
   const [retry, setRetry] = useState(0);
   const [hideAccountHistory, setHideAccountHistory] = useState(false);
   const initialRender = useRef(true);
-  const saved = parseSavedSlugs(useLocalStorageValue("saved-videos"));
+  const localSaved = parseSavedSlugs(useLocalStorageValue("saved-videos"));
+  const listSynced = useLocalStorageValue("vh-list-synced") === "1";
   const localHistory = parseSavedSlugs(useLocalStorageValue("vh-watch-history"));
   const localContinuing = parseSavedSlugs(useLocalStorageValue("vh-continue-watching"));
   const moreRequest = useRef<AbortController | null>(null);
@@ -68,13 +69,14 @@ export default function VideoBrowser({ videos, initialCategory = "all", initialQ
     const resume = hideAccountHistory ? NO_ACCOUNT : accountContinue;
     const history = [...remembered, ...localHistory.filter(slug => !remembered.includes(slug))];
     const continuing = [...resume, ...localContinuing.filter(slug => !resume.includes(slug))];
+    const saved = listSynced ? localSaved : [...accountSaved, ...localSaved.filter(slug => !accountSaved.includes(slug))];
     const chosen = tab === "saved" ? saved : tab === "continue" ? continuing : history;
     const q = query.trim().toLowerCase();
     return items.filter(video => chosen.includes(video.slug) && (category === "all" || video.categorySlug === category) && (!q || [video.title, video.description, video.creator || "", video.category].some(value => value.toLowerCase().includes(q)))).sort((a, b) => sort === "popular" ? b.views - a.views : sort === "duration" ? durationSeconds(b.duration) - durationSeconds(a.duration) : tab === "saved" ? new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime() : chosen.indexOf(a.slug) - chosen.indexOf(b.slug));
-  }, [items, saved, localContinuing, localHistory, accountContinue, accountHistory, hideAccountHistory, savedOnly, tab, category, query, sort]);
+  }, [items, localSaved, listSynced, accountSaved, localContinuing, localHistory, accountContinue, accountHistory, hideAccountHistory, savedOnly, tab, category, query, sort]);
   const labels: Record<Tab, string> = { saved: "Saved videos", continue: "Continue watching", history: "Watch history" };
   const emptyTitle = query || category !== "all" ? "No stories match your filters." : savedOnly ? tab === "saved" ? "Your list is ready when you are." : tab === "continue" ? "Nothing to continue just yet." : "Your watch history starts here." : "Good stories take a little time.";
-  const emptyDescription = query || category !== "all" ? "Try a different search or choose another category." : savedOnly ? "Explore the catalog. Saved titles stay on this browser. Signed-in watch history follows your account." : "New titles are added by VELTRIO. Come back for something worth watching.";
+  const emptyDescription = query || category !== "all" ? "Try a different search or choose another category." : savedOnly ? "Explore the catalog. Sign in and My List, plus your watch history, follows your account." : "New titles are added by VELTRIO. Come back for something worth watching.";
   return <>
     {savedOnly && <div className="library-tabs" role="group" aria-label="Your library">{(Object.keys(labels) as Tab[]).map(value => <button key={value} type="button" className={tab === value ? "active" : ""} aria-pressed={tab === value} onClick={() => setTab(value)}>{labels[value]}</button>)}</div>}
     <div className="catalog-toolbar"><form className="admin-search library-search" action="/search" onSubmit={event => { const term = query.trim(); if (term) writeLocalStorage("vh-search-history", JSON.stringify([term, ...searchHistory.filter(value => value.toLowerCase() !== term.toLowerCase())].slice(0, 5))); if (!searchPage) event.preventDefault(); }}><Search size={16} /><input placeholder={savedOnly ? "Search your library" : "Search titles and categories..."} name="q" list={searchListId} value={query} onChange={event => setQuery(event.target.value)} aria-label="Search library" /><datalist id={searchListId}>{[...new Set([...searchHistory, ...items.map(v => v.title)])].filter(value => value.toLowerCase().includes(query.toLowerCase())).slice(0, 8).map(value => <option key={value} value={value} />)}</datalist>{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear library search"><X size={15} /></button>}</form><select aria-label="Sort videos" value={sort} onChange={event => setSort(event.target.value)} className="vh-field library-sort"><option value="newest">Newest first</option><option value="popular">Most viewed</option><option value="duration">Longest first</option></select></div>
